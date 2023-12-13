@@ -26,6 +26,13 @@ class GameMapScreen extends StatefulWidget {
     required this.footstepSoundsSource,
     required this.ambiancesSource,
     required this.musicSource,
+    required this.interfaceSoundsSource,
+    this.minX = 0,
+    this.minY = 0,
+    this.maxX = 100,
+    this.maxY = 100,
+    this.onWall,
+    this.wallSound,
     this.onCreateReverb,
     this.ambiances = const [],
     this.objects = const [],
@@ -69,6 +76,29 @@ class GameMapScreen extends StatefulWidget {
 
   /// The source to play music through.
   final Source musicSource;
+
+  /// The source to play interface sounds through.
+  final Source interfaceSoundsSource;
+
+  /// The minimum x coordinate.
+  final int minX;
+
+  /// The minimum y coordinate.
+  final int minY;
+
+  /// The maximum x coordinate.
+  final int maxX;
+
+  /// The final y coordinate.
+  final int maxY;
+
+  /// The function to call when hitting a wall.
+  final void Function(Point<double> coordinates)? onWall;
+
+  /// THe sound to play when hitting a wall.
+  ///
+  /// If [wallSound] is `null`, no sound will be heard when hitting a wall.
+  final String? wallSound;
 
   /// A function to call when [reverbPreset] has been turned into an instance of
   /// [GlobalFdnReverb].
@@ -378,11 +408,28 @@ class GameMapScreenState extends State<GameMapScreen> {
                             distance = widget.rightDistance;
                             direction = normaliseAngle(_heading + 90);
                         }
-                        movePlayer(
-                          _coordinates.pointInDirection(direction, distance),
-                          playFootstepSound: true,
-                          checkCollisions: true,
-                        );
+                        final target =
+                            _coordinates.pointInDirection(direction, distance);
+                        if (target.x < widget.minX ||
+                            target.y < widget.minY ||
+                            target.x > widget.maxX ||
+                            target.y > widget.maxY) {
+                          widget.onWall?.call(target);
+                          final wallSound = widget.wallSound;
+                          if (wallSound != null) {
+                            futureContext.playSound(
+                              assetPath: wallSound,
+                              source: widget.interfaceSoundsSource,
+                              destroy: true,
+                            );
+                          }
+                        } else {
+                          movePlayer(
+                            target,
+                            playFootstepSound: true,
+                            checkCollisions: true,
+                          );
+                        }
                       },
                       duration: widget.playerMoveInterval,
                     ),

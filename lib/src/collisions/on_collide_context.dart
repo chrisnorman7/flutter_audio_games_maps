@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../game_objects/game_object.dart';
 import '../screens/game_map_screen.dart';
-import 'game_object.dart';
 
 /// A context for collisions.
 class OnCollideContext {

@@ -2,9 +2,9 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
+import '../collisions/on_collide_context.dart';
+import '../collisions/on_collide_mode.dart';
 import '../screens/game_map_screen.dart';
-import 'on_collide_context.dart';
-import 'on_collide_mode.dart';
 
 /// The type of a function which is called when colliding.
 typedef OnCollide = void Function(OnCollideContext onCollideContext);

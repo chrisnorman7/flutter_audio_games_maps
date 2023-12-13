@@ -1,4 +1,4 @@
-import 'game_object.dart';
+import '../game_objects/game_object.dart';
 
 /// The possible modes for [GameObject.onCollide].
 enum OnCollideMode {

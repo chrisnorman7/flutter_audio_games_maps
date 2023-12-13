@@ -9,10 +9,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_audio_games/flutter_audio_games.dart';
 import 'package:flutter_synthizer/flutter_synthizer.dart';
 
+import '../collisions/on_collide_context.dart';
+import '../collisions/on_collide_mode.dart';
 import '../game_objects/game_object.dart';
 import '../game_objects/game_object_context.dart';
-import '../game_objects/on_collide_context.dart';
-import '../game_objects/on_collide_mode.dart';
 
 final _random = Random();
 

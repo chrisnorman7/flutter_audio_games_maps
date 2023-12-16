@@ -231,32 +231,33 @@ class GameMapScreenState extends State<GameMapScreen> {
   }) {
     final perspective = objectContext?.gameObject;
     final c = objectContext?.coordinates ?? _coordinates;
-    final onCollideContext = OnCollideContext(
-      context: context,
-      state: this,
-      object: perspective,
-    );
     for (final gameObjectContext in gameObjectContexts) {
-      final obstacle = gameObjectContext.gameObject;
-      final obstacleCoordinates = gameObjectContext.coordinates;
-      final obstacleCollisions = _collisions[obstacle] ?? [];
-      if (obstacleCoordinates.distanceTo(c) <= obstacle.collideDistance) {
-        if (obstacleCollisions.contains(perspective)) {
-          if (obstacle.onCollideMode == OnCollideMode.every) {
-            obstacle.onCollide?.call(onCollideContext);
+      final gameObject = gameObjectContext.gameObject;
+      final gameObjectCoordinates = gameObjectContext.coordinates;
+      final gameObjectCollisions = _collisions[gameObject] ?? [];
+      final onCollideContext = OnCollideContext(
+        context: context,
+        state: this,
+        gameObject: gameObject,
+        actor: perspective,
+      );
+      if (gameObjectCoordinates.distanceTo(c) <= gameObject.collideDistance) {
+        if (gameObjectCollisions.contains(perspective)) {
+          if (gameObject.onCollideMode == OnCollideMode.every) {
+            gameObject.onCollide?.call(onCollideContext);
           }
         } else {
-          obstacleCollisions.add(perspective);
+          gameObjectCollisions.add(perspective);
           gameObjectContext.gameObject.onCollide?.call(onCollideContext);
         }
-      } else if (obstacleCollisions.contains(perspective)) {
-        obstacleCollisions.remove(perspective);
-        obstacle.onAbandon?.call(onCollideContext);
+      } else if (gameObjectCollisions.contains(perspective)) {
+        gameObjectCollisions.remove(perspective);
+        gameObject.onAbandon?.call(onCollideContext);
       }
-      if (obstacleCollisions.isEmpty) {
-        _collisions.remove(obstacle);
+      if (gameObjectCollisions.isEmpty) {
+        _collisions.remove(gameObject);
       } else {
-        _collisions[obstacle] = obstacleCollisions;
+        _collisions[gameObject] = gameObjectCollisions;
       }
     }
   }

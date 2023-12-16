@@ -7,3 +7,7 @@ export 'src/game_objects/game_object.dart';
 export 'src/game_objects/game_object_context.dart';
 export 'src/game_objects/game_object_source.dart';
 export 'src/screens/game_map_screen.dart';
+export 'src/walls/game_wall.dart';
+export 'src/walls/game_walls_context.dart';
+export 'src/walls/nearest_game_wall.dart';
+export 'src/widgets/game_walls_builder.dart';

@@ -89,10 +89,11 @@ class GameWallsBuilderState extends State<GameWallsBuilder> {
       );
       final sound = widget.wallCloseSound;
       if (sound != null) {
-        wallCloseSoundGenerator = await context.playSound(
+        wallCloseSoundGenerator ??= await context.playSound(
           sound: sound,
           source: wallCloseSoundSource,
           destroy: false,
+          looping: true,
         );
       }
     } else {

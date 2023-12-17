@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'package:flutter_audio_games/flutter_audio_games.dart';
+
 import 'game_wall.dart';
 import 'nearest_game_wall.dart';
 
@@ -11,10 +13,14 @@ class GameWallsContext {
   /// Create an instance.
   const GameWallsContext({
     required this.walls,
+    required this.onMove,
   });
 
   /// The walls to use.
   final WallsMap walls;
+
+  /// The function to call when the player has moved.
+  final void Function(Point<double> coordinates) onMove;
 
   /// Return the nearest wall to [coordinates].
   ///
@@ -35,4 +41,8 @@ class GameWallsContext {
     }
     return nearestGameWall;
   }
+
+  /// Returns a wall at [coordinates].
+  GameWall? wallAt(final Point<double> coordinates) =>
+      walls[coordinates.floor()];
 }

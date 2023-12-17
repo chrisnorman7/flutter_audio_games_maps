@@ -1,7 +1,9 @@
 import 'dart:math';
 
+import 'package:dart_synthizer/dart_synthizer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_audio_games/flutter_audio_games.dart';
+import 'package:flutter_synthizer/flutter_synthizer.dart';
 
 import '../walls/game_wall.dart';
 import '../walls/game_walls_context.dart';
@@ -31,6 +33,9 @@ class GameWallsBuilderState extends State<GameWallsBuilder> {
   /// The walls context to send to the builder.
   late final GameWallsContext gameWallsContext;
 
+  /// The source to play wall sounds through.
+  late final Source3D wallSoundsSource;
+
   /// Initialise state.
   @override
   void initState() {
@@ -43,11 +48,15 @@ class GameWallsBuilderState extends State<GameWallsBuilder> {
         }
       }
     }
-    gameWallsContext = GameWallsContext(walls: walls);
+    gameWallsContext = GameWallsContext(walls: walls, onMove: onMove);
+    wallSoundsSource = context.synthizerContext.createSource3D();
   }
 
   /// Build a widget.
   @override
   Widget build(final BuildContext context) =>
       widget.builder(context, gameWallsContext);
+
+  /// The function to call when the player has moved.
+  void onMove(final Point<double> coordinates) {}
 }

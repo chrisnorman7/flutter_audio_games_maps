@@ -24,7 +24,7 @@ class GameMapScreen extends StatefulWidget {
     required this.ambiancesSource,
     required this.musicSource,
     required this.interfaceSoundsSource,
-    this.onWall,
+    this.onWallCollide,
     this.onCreateReverb,
     this.ambiances = const [],
     this.objects = const [],
@@ -73,7 +73,7 @@ class GameMapScreen extends StatefulWidget {
   final Source interfaceSoundsSource;
 
   /// The function to call when hitting a wall.
-  final void Function(Point<double> coordinates)? onWall;
+  final void Function(GameWall wall, Point<double> coordinates)? onWallCollide;
 
   /// A function to call when [reverbPreset] has been turned into an instance of
   /// [GlobalFdnReverb].
@@ -179,26 +179,43 @@ class GameMapScreenState extends State<GameMapScreen> {
   GlobalFdnReverb? get reverb => _reverb;
 
   /// Move the player.
-  void movePlayer(
-    final Point<double> to, {
+  void movePlayer({
+    required final Point<double> to,
     required final bool playFootstepSound,
     required final bool checkCollisions,
+    final GameWallsContext? gameWallsContext,
   }) {
-    _coordinates = to;
-    context.synthizerContext.position.value = Double3(to.x, to.y, 0.0);
-    if (playFootstepSound) {
-      context.playSound(
-        sound: widget.defaultFootstepSounds.getSound(random: _random),
-        source: widget.footstepSoundsSource,
-        destroy: true,
-      );
-    }
-    if (checkCollisions) {
-      checkForCollisions();
+    final wall = gameWallsContext?.wallAt(to);
+    if (wall == null || !checkCollisions) {
+      _coordinates = to;
+      context.synthizerContext.position.value = Double3(to.x, to.y, 0.0);
+      if (playFootstepSound) {
+        context.playSound(
+          sound: widget.defaultFootstepSounds.getSound(random: _random),
+          source: widget.footstepSoundsSource,
+          destroy: true,
+        );
+      }
+      if (checkCollisions) {
+        checkForCollisions();
+      }
+      gameWallsContext?.onMove(to);
+    } else {
+      widget.onWallCollide?.call(wall, to);
+      final wallSound = wall.collisionSound;
+      if (wallSound != null) {
+        context.playSound(
+          sound: wallSound,
+          source: widget.interfaceSoundsSource,
+          destroy: true,
+        );
+      }
     }
   }
 
   /// Check for collisions.
+  ///
+  /// If [objectContext] is `null`, then we are moving the player.
   void checkForCollisions({
     final GameObjectContext? objectContext,
   }) {
@@ -248,7 +265,7 @@ class GameMapScreenState extends State<GameMapScreen> {
     gameObjectContexts = [];
     _collisions = {};
     movePlayer(
-      widget.startCoordinates,
+      to: widget.startCoordinates,
       playFootstepSound: false,
       checkCollisions: false,
     );
@@ -297,21 +314,36 @@ class GameMapScreenState extends State<GameMapScreen> {
       if (ambiance == null) {
         ambianceGenerator = null;
       } else {
-        ambianceGenerator = await context.playSound(
+        final g = await context.playSound(
           sound: ambiance,
           source: source,
           destroy: false,
           linger: true,
-        )
-          ..looping.value = true;
-        source.addGenerator(ambianceGenerator);
+          looping: true,
+        );
+        if (mounted) {
+          ambianceGenerator = g;
+          source.addGenerator(ambianceGenerator);
+        } else {
+          ambianceGenerator = null;
+          g
+            ..configDeleteBehavior(linger: false)
+            ..looping.value = false
+            ..destroy();
+        }
       }
-      final gameObjectContext = GameObjectContext(
-        gameObject: object,
-        source: source,
-        ambianceGenerator: ambianceGenerator,
-      );
-      gameObjectContexts.add(gameObjectContext);
+      if (mounted) {
+        final gameObjectContext = GameObjectContext(
+          gameObject: object,
+          source: source,
+          ambianceGenerator: ambianceGenerator,
+        );
+        gameObjectContexts.add(gameObjectContext);
+      } else {
+        source
+          ..configDeleteBehavior(linger: false)
+          ..destroy();
+      }
     }
   }
 
@@ -389,25 +421,12 @@ class GameMapScreenState extends State<GameMapScreen> {
                             direction,
                             distance,
                           );
-                          final wall = gameWallsContext.wallAt(target);
-                          if (wall != null) {
-                            widget.onWall?.call(target);
-                            final wallSound = wall.collisionSound;
-                            if (wallSound != null) {
-                              futureContext.playSound(
-                                sound: wallSound,
-                                source: widget.interfaceSoundsSource,
-                                destroy: true,
-                              );
-                            }
-                          } else {
-                            movePlayer(
-                              target,
-                              playFootstepSound: true,
-                              checkCollisions: true,
-                            );
-                            gameWallsContext.onMove(target);
-                          }
+                          movePlayer(
+                            to: target,
+                            playFootstepSound: true,
+                            checkCollisions: true,
+                            gameWallsContext: gameWallsContext,
+                          );
                         },
                         duration: widget.playerMoveInterval,
                       ),

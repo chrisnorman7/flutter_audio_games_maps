@@ -362,7 +362,8 @@ class GameMapScreenState extends State<GameMapScreen> {
                 future: future,
                 done: (final futureContext, final contexts) => GameWallsBuilder(
                   walls: widget.walls,
-                  builder: (final context, final value) => TickingTasks(
+                  builder: (final context, final gameWallsContext) =>
+                      TickingTasks(
                     tasks: [
                       // Player movement.
                       TickingTask(
@@ -394,7 +395,7 @@ class GameMapScreenState extends State<GameMapScreen> {
                             direction,
                             distance,
                           );
-                          final wall = value.wallAt(target);
+                          final wall = gameWallsContext.wallAt(target);
                           if (wall != null) {
                             widget.onWall?.call(target);
                             final wallSound = wall.collisionSound;
@@ -412,6 +413,7 @@ class GameMapScreenState extends State<GameMapScreen> {
                               playFootstepSound: true,
                               checkCollisions: true,
                             );
+                            gameWallsContext.onMove(target);
                           }
                         },
                         duration: widget.playerMoveInterval,

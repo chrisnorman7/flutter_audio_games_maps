@@ -29,6 +29,8 @@ class GameMapScreen extends StatefulWidget {
     this.ambiances = const [],
     this.objects = const [],
     this.walls = const [],
+    this.wallCloseSound,
+    this.wallCloseDistance = 10.0,
     this.startCoordinates = const Point(0.0, 0.0),
     this.initialHeading = 0.0,
     this.playerMoveInterval = const Duration(milliseconds: 500),
@@ -92,6 +94,12 @@ class GameMapScreen extends StatefulWidget {
 
   /// The walls on this map.
   final List<GameWall> walls;
+
+  /// The sound to play when walls are close.
+  final Sound? wallCloseSound;
+
+  /// The distance at which the [wallCloseSound] should play.
+  final double wallCloseDistance;
 
   /// The starting coordinates.
   final Point<double> startCoordinates;
@@ -538,6 +546,8 @@ class GameMapScreenState extends State<GameMapScreen> {
                       ),
                     ),
                   ),
+                  wallCloseSound: widget.wallCloseSound,
+                  wallCloseDistance: widget.wallCloseDistance,
                 ),
                 loading: (final innerContext) => SimpleScaffold(
                   title: widget.title,

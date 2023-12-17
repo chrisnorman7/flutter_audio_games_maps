@@ -38,8 +38,7 @@ class GameMapScreen extends StatefulWidget {
     this.backwardsDistance = 0.25,
     this.leftDistance = 0.2,
     this.rightDistance = 0.2,
-    this.musicAssetPath,
-    this.musicGain = 0.7,
+    this.music,
     this.musicFadeIn,
     this.musicFadeOut,
     super.key,
@@ -59,7 +58,7 @@ class GameMapScreen extends StatefulWidget {
   final ReverbPreset reverbPreset;
 
   /// The default footstep sounds for this map.
-  final List<String> defaultFootstepSounds;
+  final SoundList defaultFootstepSounds;
 
   /// The source to play [defaultFootstepSounds] through.
   final Source footstepSoundsSource;
@@ -86,7 +85,7 @@ class GameMapScreen extends StatefulWidget {
   final ValueChanged<GlobalFdnReverb>? onCreateReverb;
 
   /// The map ambiances to play.
-  final List<Ambiance> ambiances;
+  final List<Sound> ambiances;
 
   /// The objects on this map.
   final List<GameObject> objects;
@@ -122,10 +121,7 @@ class GameMapScreen extends StatefulWidget {
   final double rightDistance;
 
   /// The music to use for this level.
-  final String? musicAssetPath;
-
-  /// The gain for music.
-  final double musicGain;
+  final Sound? music;
 
   /// The music fade out.
   final double? musicFadeIn;
@@ -192,9 +188,7 @@ class GameMapScreenState extends State<GameMapScreen> {
     context.synthizerContext.position.value = Double3(to.x, to.y, 0.0);
     if (playFootstepSound) {
       context.playSound(
-        assetPath: widget.defaultFootstepSounds[_random.nextInt(
-          widget.defaultFootstepSounds.length,
-        )],
+        sound: widget.defaultFootstepSounds.getSound(random: _random),
         source: widget.footstepSoundsSource,
         destroy: true,
       );
@@ -274,7 +268,7 @@ class GameMapScreenState extends State<GameMapScreen> {
       gameObjectContext
         ..ambianceGenerator?.maybeFade(
           fadeLength: fadeOut,
-          startGain: gameObjectContext.gameObject.ambianceGain,
+          startGain: gameObjectContext.gameObject.ambiance?.gain ?? 0.7,
           endGain: 0.0,
         )
         ..destroy();
@@ -298,16 +292,16 @@ class GameMapScreenState extends State<GameMapScreen> {
         ..configDeleteBehavior(linger: true)
         ..gain.value = object.sourceGain
         ..addInput(reverb);
-      final ambiance = object.ambianceAssetPath;
+      final ambiance = object.ambiance;
       final BufferGenerator? ambianceGenerator;
       if (ambiance == null) {
         ambianceGenerator = null;
       } else {
         ambianceGenerator = await context.playSound(
-          assetPath: ambiance,
+          sound: ambiance,
           source: source,
           destroy: false,
-          gain: object.ambianceGain,
+          linger: true,
         )
           ..looping.value = true;
         source.addGenerator(ambianceGenerator);
@@ -351,7 +345,7 @@ class GameMapScreenState extends State<GameMapScreen> {
           widget.onCreateReverb?.call(reverb);
           final future = loadGameObjects(reverb);
           return MaybeMusic(
-            assetPath: widget.musicAssetPath,
+            music: widget.music,
             source: widget.musicSource,
             builder: (final context) => Ambiances(
               ambiances: widget.ambiances,
@@ -401,10 +395,9 @@ class GameMapScreenState extends State<GameMapScreen> {
                             final wallSound = wall.collisionSound;
                             if (wallSound != null) {
                               futureContext.playSound(
-                                assetPath: wallSound,
+                                sound: wallSound,
                                 source: widget.interfaceSoundsSource,
                                 destroy: true,
-                                gain: wall.gain,
                               );
                             }
                           } else {
@@ -538,7 +531,6 @@ class GameMapScreenState extends State<GameMapScreen> {
             ),
             fadeInLength: widget.musicFadeIn,
             fadeOutLength: widget.musicFadeOut,
-            gain: widget.musicGain,
           );
         },
       );

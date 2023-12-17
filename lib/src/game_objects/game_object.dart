@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_audio_games/flutter_audio_games.dart';
 
 import '../collisions/on_collide_context.dart';
 import '../collisions/on_collide_mode.dart';
@@ -15,8 +16,7 @@ class GameObject {
   const GameObject({
     required this.name,
     required this.startPosition,
-    this.ambianceAssetPath,
-    this.ambianceGain = 0.7,
+    this.ambiance,
     this.sourceGain = 0.7,
     this.onCollide,
     this.collideDistance = 1.0,
@@ -33,10 +33,7 @@ class GameObject {
   final Point<int> startPosition;
 
   /// The ambiance for this object.
-  final String? ambianceAssetPath;
-
-  /// The gain of the ambiance for this object.
-  final double ambianceGain;
+  final Sound? ambiance;
 
   /// The gain for the source which this object will play its sounds through.
   final double sourceGain;

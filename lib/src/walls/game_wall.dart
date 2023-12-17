@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'package:flutter_audio_games/flutter_audio_games.dart';
+
 /// A wall on a game map.
 class GameWall {
   /// Create an instance.
@@ -7,7 +9,6 @@ class GameWall {
     required this.startCoordinates,
     required this.endCoordinates,
     this.collisionSound,
-    this.gain = 0.7,
   });
 
   /// The minimum coordinates of this wall.
@@ -20,8 +21,5 @@ class GameWall {
   ///
   /// If [collisionSound] is `null`, no sound will play when this wall is
   /// collided with.
-  final String? collisionSound;
-
-  /// The gain of the [collisionSound].
-  final double gain;
+  final Sound? collisionSound;
 }

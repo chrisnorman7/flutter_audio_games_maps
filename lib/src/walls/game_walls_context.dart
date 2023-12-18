@@ -20,7 +20,7 @@ class GameWallsContext {
   final WallsMap walls;
 
   /// The function to call when the player has moved.
-  final void Function(Point<double> coordinates) onMove;
+  final void Function(Point<double> coordinates, double heading) onMove;
 
   /// Return the nearest wall to [coordinates].
   ///

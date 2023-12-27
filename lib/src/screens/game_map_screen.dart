@@ -188,6 +188,9 @@ class GameMapScreenState extends State<GameMapScreen> {
   /// Get the direction the player is turning.
   TurningDirection? get playerTurningDirection => _playerTurningDirection;
 
+  /// Whether or not the player wants to turn to the next cardinal direction.
+  late bool _playerTurningDirectionSnap;
+
   /// The reverb which has been created from `widget.reverbPreset`.
   GlobalFdnReverb? _reverb;
 
@@ -274,6 +277,9 @@ class GameMapScreenState extends State<GameMapScreen> {
   void turnPlayer(final double angle) {
     _heading = angle;
     context.synthizerContext.orientation.value = angle.angleToDouble6();
+    if ((_heading % 90) == 0 && _playerTurningDirectionSnap == true) {
+      stopPlayerTurning();
+    }
   }
 
   /// Initialise state.
@@ -287,6 +293,7 @@ class GameMapScreenState extends State<GameMapScreen> {
       playFootstepSound: false,
       checkCollisions: false,
     );
+    _playerTurningDirectionSnap = false;
     turnPlayer(widget.initialHeading);
   }
 
@@ -369,7 +376,10 @@ class GameMapScreenState extends State<GameMapScreen> {
   void stopPlayerMoving() => _playerMovingDirection = null;
 
   /// Stop the player turning.
-  void stopPlayerTurning() => _playerTurningDirection = null;
+  void stopPlayerTurning() {
+    _playerTurningDirection = null;
+    _playerTurningDirectionSnap = false;
+  }
 
   /// Pause game object sounds.
   void pauseGameObjectContexts() {
@@ -461,15 +471,12 @@ class GameMapScreenState extends State<GameMapScreen> {
                             if (playerTurningDirection == null) {
                               return;
                             }
-                            final double amount;
-                            switch (playerTurningDirection) {
-                              case TurningDirection.left:
-                                amount = -widget.playerTurnDistance;
-                                break;
-                              case TurningDirection.right:
-                                amount = widget.playerTurnDistance;
-                                break;
-                            }
+                            final amount = switch (playerTurningDirection) {
+                              TurningDirection.left =>
+                                -widget.playerTurnDistance,
+                              TurningDirection.right =>
+                                widget.playerTurnDistance,
+                            };
                             turnPlayer(normaliseAngle(_heading + amount));
                           },
                           duration: widget.playerTurnInterval,
@@ -522,6 +529,23 @@ class GameMapScreenState extends State<GameMapScreen> {
                               onStop: (final _) => stopPlayerTurning(),
                             ),
                             GameShortcut(
+                              title: 'Snap left to nearest compass point',
+                              key: LogicalKeyboardKey.arrowLeft,
+                              controlKey: true,
+                              onStart: (final _) {
+                                _playerTurningDirection = TurningDirection.left;
+                                _playerTurningDirectionSnap = true;
+                              },
+                              onStop: (final _) => stopPlayerTurning(),
+                            ),
+                            GameShortcut(
+                              title: 'Turn right',
+                              key: LogicalKeyboardKey.arrowRight,
+                              onStart: (final _) => _playerTurningDirection =
+                                  TurningDirection.right,
+                              onStop: (final _) => stopPlayerTurning(),
+                            ),
+                            GameShortcut(
                               title: 'Show keyboard shortcuts',
                               key: LogicalKeyboardKey.f1,
                               onStart: (final innerContext) => pushWidget(
@@ -550,7 +574,14 @@ class GameMapScreenState extends State<GameMapScreen> {
                                       gameObject.activateDistance) {
                                     final onActivate = gameObject.onActivate;
                                     if (onActivate != null) {
-                                      onActivate(innerContext, this);
+                                      onActivate(
+                                        OnCollideContext(
+                                          context: innerContext,
+                                          state: this,
+                                          gameObject: gameObject,
+                                          actor: null,
+                                        ),
+                                      );
                                       break;
                                     }
                                   }

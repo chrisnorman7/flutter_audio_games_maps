@@ -1,11 +1,9 @@
 import 'dart:math';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_audio_games/flutter_audio_games.dart';
 
 import '../collisions/on_collide_context.dart';
 import '../collisions/on_collide_mode.dart';
-import '../screens/game_map_screen.dart';
 
 /// The type of a function which is called when colliding.
 typedef OnCollide = void Function(OnCollideContext onCollideContext);
@@ -51,8 +49,7 @@ class GameObject {
   final OnCollideMode onCollideMode;
 
   /// The function to call when this object is activated.
-  final void Function(BuildContext context, GameMapScreenState state)?
-      onActivate;
+  final OnCollide? onActivate;
 
   /// The distance at which [onActivate] can be called.
   final double activateDistance;

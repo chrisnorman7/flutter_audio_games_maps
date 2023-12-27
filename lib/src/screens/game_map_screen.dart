@@ -157,6 +157,11 @@ class GameMapScreenState extends State<GameMapScreen> {
   /// The game object contexts to use.
   late final List<GameObjectContext> gameObjectContexts;
 
+  /// Get a context which represents [gameObject].
+  GameObjectContext getGameObjectContext(final GameObject gameObject) =>
+      gameObjectContexts
+          .firstWhere((final element) => element.gameObject == gameObject);
+
   /// The collisions that are currently known about.
   late final Map<GameObject, List<GameObject?>> _collisions;
 

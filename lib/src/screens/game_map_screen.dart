@@ -34,7 +34,7 @@ class GameMapScreen extends StatefulWidget {
     this.wallCloseDistance = 5.0,
     this.echoDelayModifier = 0.05,
     this.echoMaxGain = 0.7,
-    this.muffleSounds,
+    this.muffleGameObjectSounds,
     this.initialCoordinates = const Point(0.0, 0.0),
     this.initialHeading = 0.0,
     this.playerMoveInterval = const Duration(milliseconds: 500),
@@ -118,7 +118,7 @@ class GameMapScreen extends StatefulWidget {
   final void Function(
     GameObjectContext gameObjectContext,
     List<GameWall> walls,
-  )? muffleSounds;
+  )? muffleGameObjectSounds;
 
   /// The starting coordinates.
   final Point<double> initialCoordinates;
@@ -259,7 +259,7 @@ class GameMapScreenState extends State<GameMapScreen> {
             floored,
             gameObjectContext.coordinates.floor(),
           );
-          widget.muffleSounds?.call(gameObjectContext, walls);
+          widget.muffleGameObjectSounds?.call(gameObjectContext, walls);
         }
       }
     } else {

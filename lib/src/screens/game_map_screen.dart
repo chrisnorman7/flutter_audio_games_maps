@@ -11,6 +11,7 @@ import 'package:flutter_synthizer/flutter_synthizer.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
 import '../../flutter_audio_games_maps.dart';
+import '../game_objects/game_object_visibility.dart';
 
 final _random = Random();
 
@@ -25,6 +26,8 @@ class GameMapScreen extends StatefulWidget {
     required this.ambiancesSource,
     required this.musicSource,
     required this.interfaceSoundsSource,
+    required this.showObjectSound,
+    required this.noVisibleObjectsSound,
     this.onWallCollide,
     this.onCreateReverb,
     this.ambiances = const [],
@@ -35,6 +38,7 @@ class GameMapScreen extends StatefulWidget {
     this.echoDelayModifier = 0.05,
     this.echoMaxGain = 0.7,
     this.muffleGameObjectSounds,
+    this.gameObjectVisibility = const GameObjectVisibility(),
     this.initialCoordinates = const Point(0.0, 0.0),
     this.initialHeading = 0.0,
     this.playerMoveInterval = const Duration(milliseconds: 500),
@@ -119,6 +123,15 @@ class GameMapScreen extends StatefulWidget {
     GameObjectContext gameObjectContext,
     List<GameWall> walls,
   )? muffleGameObjectSounds;
+
+  /// The configuration for which objects are visible.
+  final GameObjectVisibility gameObjectVisibility;
+
+  /// The sound to play when an object is selected.
+  final Sound showObjectSound;
+
+  /// The sound to play when no objects are visible.
+  final Sound noVisibleObjectsSound;
 
   /// The starting coordinates.
   final Point<double> initialCoordinates;
@@ -229,6 +242,9 @@ class GameMapScreenState extends State<GameMapScreen> {
 
   /// The walls context to use.
   GameWallsContext? gameWallsContext;
+
+  /// The most recently observed object.
+  GameObjectContext? _recentObject;
 
   /// Move the player.
   void movePlayer({
@@ -626,19 +642,77 @@ class GameMapScreenState extends State<GameMapScreen> {
                                 },
                               ),
                               GameShortcut(
-                                title: 'Show keyboard shortcuts',
-                                key: LogicalKeyboardKey.f1,
-                                onStart: (final innerContext) => pushWidget(
-                                  context: innerContext,
-                                  builder: (final innerInnerContext) {
-                                    final shortcuts = GameShortcuts.of(
-                                      innerContext,
-                                    ).shortcuts;
-                                    return GameShortcutsHelpScreen(
-                                      shortcuts: shortcuts,
+                                title: 'Show previous object',
+                                key: LogicalKeyboardKey.tab,
+                                shiftKey: true,
+                                onStart: (final innerContext) =>
+                                    showPreviousGameObjectContext(),
+                              ),
+                              GameShortcut(
+                                title: 'Show next object',
+                                key: LogicalKeyboardKey.tab,
+                                onStart: (final innerContext) =>
+                                    showNextGameObjectContext(),
+                              ),
+                              GameShortcut(
+                                title: 'Show coordinates of nearby object',
+                                key: LogicalKeyboardKey.keyZ,
+                                onStart: (final innerContext) {
+                                  final recent = _recentObject;
+                                  if (recent == null) {
+                                    innerContext.playSound(
+                                      sound: widget.noVisibleObjectsSound,
+                                      source: widget.interfaceSoundsSource,
+                                      destroy: true,
                                     );
-                                  },
-                                ),
+                                  } else {
+                                    final c = recent.coordinates.floor();
+                                    context.playSound(
+                                      sound: widget.showObjectSound,
+                                      source: recent.source,
+                                      destroy: true,
+                                    );
+                                    speak('${c.x}, ${c.y}');
+                                  }
+                                },
+                              ),
+                              GameShortcut(
+                                title: 'Show distance to nearby object',
+                                key: LogicalKeyboardKey.keyX,
+                                onStart: (final innerContext) {
+                                  final recent = _recentObject;
+                                  if (recent == null) {
+                                    innerContext.playSound(
+                                      sound: widget.noVisibleObjectsSound,
+                                      source: widget.interfaceSoundsSource,
+                                      destroy: true,
+                                    );
+                                  } else {
+                                    context.playSound(
+                                      sound: widget.showObjectSound,
+                                      source: recent.source,
+                                      destroy: true,
+                                    );
+                                    final distance = coordinates
+                                        .distanceTo(
+                                          recent.coordinates,
+                                        )
+                                        .floor();
+                                    if (distance == 0) {
+                                      speak('Here.');
+                                    } else {
+                                      final angle = normaliseAngle(
+                                        coordinates.angleBetween(
+                                              recent.coordinates,
+                                            ) -
+                                            heading,
+                                      ).floor();
+                                      speak(
+                                        '$distance metres at $angle °',
+                                      );
+                                    }
+                                  }
+                                },
                               ),
                               GameShortcut(
                                 title: 'Speak Coordinates',
@@ -656,6 +730,21 @@ class GameMapScreenState extends State<GameMapScreen> {
                                 key: LogicalKeyboardKey.keyH,
                                 onStart: (final innerContext) => speak(
                                   '${heading.floor()} °',
+                                ),
+                              ),
+                              GameShortcut(
+                                title: 'Show keyboard shortcuts',
+                                key: LogicalKeyboardKey.f1,
+                                onStart: (final innerContext) => pushWidget(
+                                  context: innerContext,
+                                  builder: (final innerInnerContext) {
+                                    final shortcuts = GameShortcuts.of(
+                                      innerContext,
+                                    ).shortcuts;
+                                    return GameShortcutsHelpScreen(
+                                      shortcuts: shortcuts,
+                                    );
+                                  },
                                 ),
                               ),
                             ],
@@ -687,4 +776,82 @@ class GameMapScreenState extends State<GameMapScreen> {
           );
         },
       );
+
+  /// Returns the list of [gameObjectContexts] which are visible from
+  /// [coordinates].
+  Iterable<GameObjectContext> getVisibleGameObjects() =>
+      gameObjectContexts.where(
+        (final element) {
+          if (element.coordinates.distanceTo(coordinates) <
+              widget.gameObjectVisibility.distance) {
+            return widget.gameObjectVisibility.visibleThroughWalls ||
+                (gameWallsContext?.getWallsBetween(
+                          coordinates.floor(),
+                          element.coordinates.floor(),
+                        ) ??
+                        [])
+                    .isEmpty;
+          }
+          return false;
+        },
+      );
+
+  /// Show [gameObjectContext].
+  void showGameObjectContext(final GameObjectContext gameObjectContext) {
+    _recentObject = gameObjectContext;
+    context.playSound(
+      sound: widget.showObjectSound,
+      source: gameObjectContext.source,
+      destroy: true,
+    );
+    speak(gameObjectContext.gameObject.name);
+  }
+
+  /// Show the previous object.
+  void showPreviousGameObjectContext() {
+    final objects = getVisibleGameObjects().toList();
+    if (objects.isEmpty) {
+      context.playSound(
+        sound: widget.noVisibleObjectsSound,
+        source: widget.interfaceSoundsSource,
+        destroy: true,
+      );
+      return;
+    }
+    final recentObject = _recentObject;
+    if (recentObject == null || !objects.contains(recentObject)) {
+      showGameObjectContext(objects.last);
+    } else {
+      final index = objects.indexOf(recentObject) - 1;
+      if (index <= 0) {
+        showGameObjectContext(objects.last);
+      } else {
+        showGameObjectContext(objects[index]);
+      }
+    }
+  }
+
+  /// Show the next object.
+  void showNextGameObjectContext() {
+    final objects = getVisibleGameObjects().toList();
+    if (objects.isEmpty) {
+      context.playSound(
+        sound: widget.noVisibleObjectsSound,
+        source: widget.interfaceSoundsSource,
+        destroy: true,
+      );
+      return;
+    }
+    final recentObject = _recentObject;
+    if (recentObject == null || !objects.contains(recentObject)) {
+      showGameObjectContext(objects.first);
+    } else {
+      final index = objects.indexOf(recentObject) + 1;
+      if (index >= objects.length) {
+        showGameObjectContext(objects.first);
+      } else {
+        showGameObjectContext(objects[index]);
+      }
+    }
+  }
 }

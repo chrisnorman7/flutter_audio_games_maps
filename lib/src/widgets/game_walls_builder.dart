@@ -87,9 +87,9 @@ class GameWallsBuilderState extends State<GameWallsBuilder> {
     gameWallsContext = GameWallsContext(walls: walls, onMove: onMove);
     final synthizerContext = context.synthizerContext;
     wallCloseSoundSource = synthizerContext.createSource3D();
-    onMove(widget.initialCoordinates, widget.initialHeading);
     openSpaceEcho = synthizerContext.createGlobalEcho();
     widget.openSpaceSource.addInput(synthizerContext.createGlobalEcho());
+    onMove(widget.initialCoordinates, widget.initialHeading);
   }
 
   /// Dispose of the widget.

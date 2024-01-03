@@ -464,6 +464,11 @@ class GameMapScreenState extends State<GameMapScreen> {
                     walls: widget.walls,
                     builder: (final context, final wallsContext) {
                       gameWallsContext = wallsContext;
+                      movePlayer(
+                        to: coordinates,
+                        playFootstepSound: false,
+                        checkCollisions: false,
+                      );
                       return TickingTasks(
                         tasks: [
                           // Player movement.

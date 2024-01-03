@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_audio_games/flutter_audio_games.dart';
 import 'package:flutter_synthizer/flutter_synthizer.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
 import '../../flutter_audio_games_maps.dart';
 
@@ -45,6 +46,7 @@ class GameMapScreen extends StatefulWidget {
     this.music,
     this.musicFadeIn,
     this.musicFadeOut,
+    this.ttsRate = 1.0,
     super.key,
   });
 
@@ -147,6 +149,9 @@ class GameMapScreen extends StatefulWidget {
   /// The music fade out.
   final double? musicFadeOut;
 
+  /// The rate the TTS will speak at.
+  final double ttsRate;
+
   /// Create state for this widget.
   @override
   GameMapScreenState createState() => GameMapScreenState();
@@ -154,6 +159,17 @@ class GameMapScreen extends StatefulWidget {
 
 /// State for [GameMapScreen].
 class GameMapScreenState extends State<GameMapScreen> {
+  /// The TTS instance to use.
+  late final FlutterTts _tts;
+
+  /// Speak a string.
+  Future<void> speak(final String text, {final bool interrupt = true}) async {
+    if (interrupt) {
+      await _tts.stop();
+    }
+    return _tts.speak(text);
+  }
+
   /// The game object contexts to use.
   late final List<GameObjectContext> gameObjectContexts;
 
@@ -204,12 +220,14 @@ class GameMapScreenState extends State<GameMapScreen> {
   /// If [reverb] is `null`, then the reverb has not been created yet.
   GlobalFdnReverb? get reverb => _reverb;
 
+  /// The walls context to use.
+  GameWallsContext? gameWallsContext;
+
   /// Move the player.
   void movePlayer({
     required final Point<double> to,
     required final bool playFootstepSound,
     required final bool checkCollisions,
-    final GameWallsContext? gameWallsContext,
   }) {
     final wall = gameWallsContext?.wallAt(to);
     if (wall == null || !checkCollisions) {
@@ -291,6 +309,7 @@ class GameMapScreenState extends State<GameMapScreen> {
   @override
   void initState() {
     super.initState();
+    _tts = FlutterTts()..setSpeechRate(widget.ttsRate);
     gameObjectContexts = [];
     _collisions = {};
     movePlayer(
@@ -425,179 +444,203 @@ class GameMapScreenState extends State<GameMapScreen> {
                   }
                   return GameWallsBuilder(
                     walls: widget.walls,
-                    builder: (final context, final gameWallsContext) =>
-                        TickingTasks(
-                      tasks: [
-                        // Player movement.
-                        TickingTask(
-                          onTick: () {
-                            final playerMovingDirection =
-                                _playerMovingDirection;
-                            if (playerMovingDirection == null) {
-                              return;
-                            }
-                            final double distance;
-                            final double direction;
-                            switch (playerMovingDirection) {
-                              case MovingDirection.forwards:
-                                distance = widget.forwardsDistance;
-                                direction = _heading;
-                                break;
-                              case MovingDirection.backwards:
-                                distance = widget.backwardsDistance;
-                                direction = normaliseAngle(_heading + 180.0);
-                                break;
-                              case MovingDirection.left:
-                                distance = widget.leftDistance;
-                                direction = normaliseAngle(_heading - 90);
-                                break;
-                              case MovingDirection.right:
-                                distance = widget.rightDistance;
-                                direction = normaliseAngle(_heading + 90);
-                            }
-                            final target = _coordinates.pointInDirection(
-                              direction,
-                              distance,
-                            );
-                            movePlayer(
-                              to: target,
-                              playFootstepSound: true,
-                              checkCollisions: true,
-                              gameWallsContext: gameWallsContext,
-                            );
-                          },
-                          duration: widget.playerMoveInterval,
-                        ),
-                        // Player turning.
-                        TickingTask(
-                          onTick: () {
-                            final playerTurningDirection =
-                                _playerTurningDirection;
-                            if (playerTurningDirection == null) {
-                              return;
-                            }
-                            final amount = switch (playerTurningDirection) {
-                              TurningDirection.left =>
-                                -widget.playerTurnDistance,
-                              TurningDirection.right =>
-                                widget.playerTurnDistance,
-                            };
-                            turnPlayer(normaliseAngle(_heading + amount));
-                          },
-                          duration: widget.playerTurnInterval,
-                        ),
-                      ],
-                      child: SimpleScaffold(
-                        title: widget.title,
-                        body: GameShortcuts(
-                          shortcuts: [
-                            GameShortcut(
-                              title: 'Move forward',
-                              key: LogicalKeyboardKey.keyW,
-                              onStart: (final _) => _playerMovingDirection =
-                                  MovingDirection.forwards,
-                              onStop: (final _) => stopPlayerMoving(),
-                            ),
-                            GameShortcut(
-                              title: 'Move backwards',
-                              key: LogicalKeyboardKey.keyS,
-                              onStart: (final _) => _playerMovingDirection =
-                                  MovingDirection.backwards,
-                              onStop: (final _) => stopPlayerMoving(),
-                            ),
-                            GameShortcut(
-                              title: 'Sidestep left',
-                              key: LogicalKeyboardKey.keyA,
-                              onStart: (final _) =>
-                                  _playerMovingDirection = MovingDirection.left,
-                              onStop: (final _) => stopPlayerMoving(),
-                            ),
-                            GameShortcut(
-                              title: 'Sidestep right',
-                              key: LogicalKeyboardKey.keyD,
-                              onStart: (final _) => _playerMovingDirection =
-                                  MovingDirection.right,
-                              onStop: (final _) => stopPlayerMoving(),
-                            ),
-                            GameShortcut(
-                              title: 'Turn left',
-                              key: LogicalKeyboardKey.arrowLeft,
-                              onStart: (final _) => _playerTurningDirection =
-                                  TurningDirection.left,
-                              onStop: (final _) => stopPlayerTurning(),
-                            ),
-                            GameShortcut(
-                              title: 'Turn right',
-                              key: LogicalKeyboardKey.arrowRight,
-                              onStart: (final _) => _playerTurningDirection =
-                                  TurningDirection.right,
-                              onStop: (final _) => stopPlayerTurning(),
-                            ),
-                            GameShortcut(
-                              title: 'Snap left to nearest compass point',
-                              key: LogicalKeyboardKey.arrowLeft,
-                              controlKey: true,
-                              onStart: (final _) {
-                                _playerTurningDirection = TurningDirection.left;
-                                _playerTurningDirectionSnap = true;
-                              },
-                              onStop: (final _) => stopPlayerTurning(),
-                            ),
-                            GameShortcut(
-                              title: 'Turn right',
-                              key: LogicalKeyboardKey.arrowRight,
-                              onStart: (final _) => _playerTurningDirection =
-                                  TurningDirection.right,
-                              onStop: (final _) => stopPlayerTurning(),
-                            ),
-                            GameShortcut(
-                              title: 'Show keyboard shortcuts',
-                              key: LogicalKeyboardKey.f1,
-                              onStart: (final innerContext) => pushWidget(
-                                context: innerContext,
-                                builder: (final innerInnerContext) {
-                                  final shortcuts = GameShortcuts.of(
-                                    innerContext,
-                                  ).shortcuts;
-                                  return GameShortcutsHelpScreen(
-                                    shortcuts: shortcuts,
+                    builder: (final context, final wallsContext) {
+                      gameWallsContext = wallsContext;
+                      return TickingTasks(
+                        tasks: [
+                          // Player movement.
+                          TickingTask(
+                            onTick: () {
+                              final playerMovingDirection =
+                                  _playerMovingDirection;
+                              if (playerMovingDirection == null) {
+                                return;
+                              }
+                              final double distance;
+                              final double direction;
+                              switch (playerMovingDirection) {
+                                case MovingDirection.forwards:
+                                  distance = widget.forwardsDistance;
+                                  direction = _heading;
+                                  break;
+                                case MovingDirection.backwards:
+                                  distance = widget.backwardsDistance;
+                                  direction = normaliseAngle(_heading + 180.0);
+                                  break;
+                                case MovingDirection.left:
+                                  distance = widget.leftDistance;
+                                  direction = normaliseAngle(_heading - 90);
+                                  break;
+                                case MovingDirection.right:
+                                  distance = widget.rightDistance;
+                                  direction = normaliseAngle(_heading + 90);
+                              }
+                              final target = _coordinates.pointInDirection(
+                                direction,
+                                distance,
+                              );
+                              movePlayer(
+                                to: target,
+                                playFootstepSound: true,
+                                checkCollisions: true,
+                              );
+                            },
+                            duration: widget.playerMoveInterval,
+                          ),
+                          // Player turning.
+                          TickingTask(
+                            onTick: () {
+                              final playerTurningDirection =
+                                  _playerTurningDirection;
+                              if (playerTurningDirection == null) {
+                                return;
+                              }
+                              final amount = switch (playerTurningDirection) {
+                                TurningDirection.left =>
+                                  -widget.playerTurnDistance,
+                                TurningDirection.right =>
+                                  widget.playerTurnDistance,
+                              };
+                              turnPlayer(normaliseAngle(_heading + amount));
+                            },
+                            duration: widget.playerTurnInterval,
+                          ),
+                        ],
+                        child: SimpleScaffold(
+                          title: widget.title,
+                          body: GameShortcuts(
+                            shortcuts: [
+                              GameShortcut(
+                                title: 'Move forward',
+                                key: LogicalKeyboardKey.keyW,
+                                onStart: (final _) => _playerMovingDirection =
+                                    MovingDirection.forwards,
+                                onStop: (final _) => stopPlayerMoving(),
+                              ),
+                              GameShortcut(
+                                title: 'Move backwards',
+                                key: LogicalKeyboardKey.keyS,
+                                onStart: (final _) => _playerMovingDirection =
+                                    MovingDirection.backwards,
+                                onStop: (final _) => stopPlayerMoving(),
+                              ),
+                              GameShortcut(
+                                title: 'Sidestep left',
+                                key: LogicalKeyboardKey.keyA,
+                                onStart: (final _) => _playerMovingDirection =
+                                    MovingDirection.left,
+                                onStop: (final _) => stopPlayerMoving(),
+                              ),
+                              GameShortcut(
+                                title: 'Sidestep right',
+                                key: LogicalKeyboardKey.keyD,
+                                onStart: (final _) => _playerMovingDirection =
+                                    MovingDirection.right,
+                                onStop: (final _) => stopPlayerMoving(),
+                              ),
+                              GameShortcut(
+                                title: 'Turn left',
+                                key: LogicalKeyboardKey.arrowLeft,
+                                onStart: (final _) => _playerTurningDirection =
+                                    TurningDirection.left,
+                                onStop: (final _) => stopPlayerTurning(),
+                              ),
+                              GameShortcut(
+                                title: 'Turn right',
+                                key: LogicalKeyboardKey.arrowRight,
+                                onStart: (final _) => _playerTurningDirection =
+                                    TurningDirection.right,
+                                onStop: (final _) => stopPlayerTurning(),
+                              ),
+                              GameShortcut(
+                                title: 'Snap left to nearest compass point',
+                                key: LogicalKeyboardKey.arrowLeft,
+                                controlKey: true,
+                                onStart: (final _) {
+                                  _playerTurningDirection =
+                                      TurningDirection.left;
+                                  _playerTurningDirectionSnap = true;
+                                },
+                                // onStop: (final _) => stopPlayerTurning(),
+                              ),
+                              GameShortcut(
+                                title: 'Snap left to nearest compass point',
+                                key: LogicalKeyboardKey.arrowRight,
+                                controlKey: true,
+                                onStart: (final _) {
+                                  _playerTurningDirection =
+                                      TurningDirection.right;
+                                  _playerTurningDirectionSnap = true;
+                                },
+                                // onStop: (final _) => stopPlayerTurning(),
+                              ),
+                              GameShortcut(
+                                title: 'Activate a nearby object',
+                                key: LogicalKeyboardKey.enter,
+                                onStart: (final innerContext) {
+                                  for (final gameObjectContext
+                                      in gameObjectContexts) {
+                                    final gameObject =
+                                        gameObjectContext.gameObject;
+                                    if (_coordinates.distanceTo(
+                                          gameObjectContext.coordinates,
+                                        ) <=
+                                        gameObject.activateDistance) {
+                                      final onActivate = gameObject.onActivate;
+                                      if (onActivate != null) {
+                                        onActivate(
+                                          OnCollideContext(
+                                            context: innerContext,
+                                            state: this,
+                                            gameObject: gameObject,
+                                            actor: null,
+                                          ),
+                                        );
+                                        break;
+                                      }
+                                    }
+                                  }
+                                },
+                              ),
+                              GameShortcut(
+                                title: 'Show keyboard shortcuts',
+                                key: LogicalKeyboardKey.f1,
+                                onStart: (final innerContext) => pushWidget(
+                                  context: innerContext,
+                                  builder: (final innerInnerContext) {
+                                    final shortcuts = GameShortcuts.of(
+                                      innerContext,
+                                    ).shortcuts;
+                                    return GameShortcutsHelpScreen(
+                                      shortcuts: shortcuts,
+                                    );
+                                  },
+                                ),
+                              ),
+                              GameShortcut(
+                                title: 'Speak Coordinates',
+                                key: LogicalKeyboardKey.keyC,
+                                onStart: (final innerContext) {
+                                  final x = coordinates.x.floor();
+                                  final y = coordinates.y.floor();
+                                  speak(
+                                    '$x, $y',
                                   );
                                 },
                               ),
-                            ),
-                            GameShortcut(
-                              title: 'Activate a nearby object',
-                              key: LogicalKeyboardKey.enter,
-                              onStart: (final innerContext) {
-                                for (final gameObjectContext
-                                    in gameObjectContexts) {
-                                  final gameObject =
-                                      gameObjectContext.gameObject;
-                                  if (_coordinates.distanceTo(
-                                        gameObjectContext.coordinates,
-                                      ) <=
-                                      gameObject.activateDistance) {
-                                    final onActivate = gameObject.onActivate;
-                                    if (onActivate != null) {
-                                      onActivate(
-                                        OnCollideContext(
-                                          context: innerContext,
-                                          state: this,
-                                          gameObject: gameObject,
-                                          actor: null,
-                                        ),
-                                      );
-                                      break;
-                                    }
-                                  }
-                                }
-                              },
-                            ),
-                          ],
-                          child: Text(widget.title),
+                              GameShortcut(
+                                title: 'Speak current heading',
+                                key: LogicalKeyboardKey.keyH,
+                                onStart: (final innerContext) => speak(
+                                  '${heading.floor()} °',
+                                ),
+                              ),
+                            ],
+                            child: Text(widget.title),
+                          ),
                         ),
-                      ),
-                    ),
+                      );
+                    },
                     wallCloseSound: widget.wallCloseSound,
                     wallCloseDistance: widget.wallCloseDistance,
                     initialCoordinates: widget.initialCoordinates,

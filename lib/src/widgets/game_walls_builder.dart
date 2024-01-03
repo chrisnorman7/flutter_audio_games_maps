@@ -14,10 +14,10 @@ class GameWallsBuilder extends StatefulWidget {
   /// Create an instance.
   const GameWallsBuilder({
     required this.walls,
+    required this.openSpaceSource,
     required this.builder,
     this.wallCloseSound,
     this.wallCloseDistance = 5.0,
-    this.openSpaceSource,
     this.initialCoordinates = const Point(0.0, 0.0),
     this.initialHeading = 0.0,
     this.echoDelayModifier = 0.05,
@@ -38,7 +38,7 @@ class GameWallsBuilder extends StatefulWidget {
   final double wallCloseDistance;
 
   /// The source to add echo to to indicate open space.
-  final Source? openSpaceSource;
+  final Source openSpaceSource;
 
   /// The initial position of the player when this widget is created.
   final Point<double> initialCoordinates;
@@ -88,12 +88,8 @@ class GameWallsBuilderState extends State<GameWallsBuilder> {
     final synthizerContext = context.synthizerContext;
     wallCloseSoundSource = synthizerContext.createSource3D();
     onMove(widget.initialCoordinates, widget.initialHeading);
-    final source = widget.openSpaceSource;
-    if (source != null) {
-      final echo = synthizerContext.createGlobalEcho();
-      openSpaceEcho = echo;
-      source.addInput(echo);
-    }
+    openSpaceEcho = synthizerContext.createGlobalEcho();
+    widget.openSpaceSource.addInput(synthizerContext.createGlobalEcho());
   }
 
   /// Dispose of the widget.

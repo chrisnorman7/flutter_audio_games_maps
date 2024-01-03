@@ -1,5 +1,3 @@
-// ignore_for_file: avoid_print
-
 import 'dart:math';
 
 import 'package:dart_synthizer/dart_synthizer.dart';
@@ -200,11 +198,7 @@ class GameWallsBuilderState extends State<GameWallsBuilder> {
           ),
       ];
       final wall = leftWall ?? aheadWall ?? rightWall;
-      if (wall != null) {
-        print('Distance: ${wall.distance}');
-        print('Delay: ${getEchoTapDelay(wall.distance)}');
-        print('Gain: ${getEchoTapGain(wall.distance)}');
-      }
+      if (wall != null) {}
       echo.setTaps(taps);
     }
   }

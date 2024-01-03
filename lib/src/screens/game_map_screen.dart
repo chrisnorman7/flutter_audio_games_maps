@@ -34,11 +34,12 @@ class GameMapScreen extends StatefulWidget {
     this.wallCloseDistance = 5.0,
     this.echoDelayModifier = 0.05,
     this.echoMaxGain = 0.7,
+    this.muffleSounds,
     this.initialCoordinates = const Point(0.0, 0.0),
     this.initialHeading = 0.0,
     this.playerMoveInterval = const Duration(milliseconds: 500),
-    this.playerTurnInterval = const Duration(milliseconds: 50),
-    this.playerTurnDistance = 5.0,
+    this.playerTurnInterval = const Duration(milliseconds: 20),
+    this.playerTurnDistance = 1.0,
     this.forwardsDistance = 0.5,
     this.backwardsDistance = 0.25,
     this.leftDistance = 0.2,
@@ -112,6 +113,12 @@ class GameMapScreen extends StatefulWidget {
   /// The modifier which will be divided by the distance between the player and
   /// the nearest wall to result in echo delay.
   final double echoMaxGain;
+
+  /// The function that will be called to muffle game object sounds.
+  final void Function(
+    GameObjectContext gameObjectContext,
+    List<GameWall> walls,
+  )? muffleSounds;
 
   /// The starting coordinates.
   final Point<double> initialCoordinates;
@@ -229,7 +236,9 @@ class GameMapScreenState extends State<GameMapScreen> {
     required final bool playFootstepSound,
     required final bool checkCollisions,
   }) {
-    final wall = gameWallsContext?.wallAt(to);
+    final wallsContext = gameWallsContext;
+    final floored = to.floor();
+    final wall = wallsContext?.wallAt(floored);
     if (wall == null || !checkCollisions) {
       _coordinates = to;
       context.synthizerContext.position.value = Double3(to.x, to.y, 0.0);
@@ -243,7 +252,16 @@ class GameMapScreenState extends State<GameMapScreen> {
       if (checkCollisions) {
         checkForCollisions();
       }
-      gameWallsContext?.onMove(to, heading);
+      wallsContext?.onMove(to, heading);
+      if (wallsContext != null) {
+        for (final gameObjectContext in gameObjectContexts) {
+          final walls = wallsContext.getWallsBetween(
+            floored,
+            gameObjectContext.coordinates.floor(),
+          );
+          widget.muffleSounds?.call(gameObjectContext, walls);
+        }
+      }
     } else {
       widget.onWallCollide?.call(wall, to);
       final wallSound = wall.collisionSound;

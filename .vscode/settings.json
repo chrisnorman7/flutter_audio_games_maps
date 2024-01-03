@@ -2,10 +2,13 @@
   "cSpell.words": [
     "analyzer",
     "Behavior",
+    "Biquad",
     "bools",
     "Colors",
     "Fdn",
     "formals",
+    "Highpass",
+    "Lowpass",
     "pubspec",
     "synthizer",
     "todos",

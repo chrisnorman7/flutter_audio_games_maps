@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_synthizer/flutter_synthizer.dart';
 
+import 'src/screens/home_page.dart';
+
 /// Entry point.
 void main() {
   runApp(const MyApp());
@@ -15,12 +17,12 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(final BuildContext context) => SynthizerScope(
         child: MaterialApp(
-          title: 'Flutter Demo',
+          title: 'Map Editor',
           theme: ThemeData(
             colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
             useMaterial3: true,
           ),
-          home: const Placeholder(),
+          home: const HomePage(),
         ),
       );
 }

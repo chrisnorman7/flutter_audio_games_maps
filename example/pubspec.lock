@@ -265,6 +265,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.1.1"
+  filesize:
+    dependency: "direct main"
+    description:
+      name: filesize
+      sha256: f53df1f27ff60e466eefcd9df239e02d4722d5e2debee92a87dfd99ac66de2af
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.1"
   fixnum:
     dependency: transitive
     description:
@@ -282,10 +290,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_audio_games
-      sha256: a987873c2945aaaab4d0ec12e9807e8264b2fe8c6241d7b00e3250d640af54bf
+      sha256: c6183125d22dd20e5fefa3fa9cbd033c7f5b84f3c951a48060542878528ec3dc
       url: "https://pub.dev"
     source: hosted
-    version: "0.13.0"
+    version: "0.13.2"
   flutter_audio_games_maps:
     dependency: "direct main"
     description:

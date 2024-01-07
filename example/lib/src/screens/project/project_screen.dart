@@ -1,12 +1,17 @@
 import 'dart:io';
 
+import 'package:backstreets_widgets/icons.dart';
 import 'package:backstreets_widgets/screens.dart';
 import 'package:backstreets_widgets/widgets.dart';
+import 'package:dart_synthizer/dart_synthizer.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_synthizer/flutter_synthizer.dart';
 import 'package:path/path.dart' as path;
 
 import '../../constants.dart';
 import '../../database/database.dart';
+import '../../widgets/project/assets_list.dart';
+import '../../widgets/project/rooms_list.dart';
 
 /// A screen for displaying a project.
 class ProjectScreen extends StatefulWidget {
@@ -26,6 +31,9 @@ class ProjectScreen extends StatefulWidget {
 
 /// State for [ProjectScreen].
 class ProjectScreenState extends State<ProjectScreen> {
+  /// The source to play sounds through.
+  late final DirectSource source;
+
   /// The database to use.
   late final EditorDatabase database;
 
@@ -36,6 +44,7 @@ class ProjectScreenState extends State<ProjectScreen> {
     database = EditorDatabase(
       File(path.join(widget.projectDirectory.path, databaseFilename)),
     );
+    source = context.synthizerContext.createDirectSource();
   }
 
   /// Dispose of the widget.
@@ -43,41 +52,42 @@ class ProjectScreenState extends State<ProjectScreen> {
   void dispose() {
     super.dispose();
     database.close();
+    source.destroy();
   }
 
   /// Build a widget.
   @override
-  Widget build(final BuildContext context) {
-    final future = database.roomsDao.getRooms();
-    return SimpleScaffold(
-      title: path.basename(widget.projectDirectory.path),
-      body: SimpleFutureBuilder(
-        future: future,
-        done: (final context, final rooms) {
-          if (rooms!.isEmpty) {
-            return const CenterText(
-              text: 'There are no created rooms yet.',
-              autofocus: true,
-            );
-          }
-          return BuiltSearchableListView(
-            items: rooms,
-            builder: (final context, final index) {
-              final room = rooms[index];
-              return SearchableListTile(
-                searchString: room.name,
-                child: ListTile(
-                  autofocus: index == 0,
-                  title: Text(room.name),
-                  onTap: () {},
-                ),
-              );
-            },
-          );
-        },
-        loading: (final context) => const LoadingWidget(),
-        error: ErrorListView.withPositional,
-      ),
-    );
+  Widget build(final BuildContext context) => Cancel(
+        child: TabbedScaffold(
+          tabs: [
+            TabbedScaffoldTab(
+              title: 'Rooms',
+              icon: const Text('The rooms in the database'),
+              builder: (final context) => CommonShortcuts(
+                newCallback: createRoom,
+                child: RoomsList(database: database),
+              ),
+              floatingActionButton: FloatingActionButton(
+                onPressed: createRoom,
+                tooltip: 'Create Room',
+                child: addIcon,
+              ),
+            ),
+            TabbedScaffoldTab(
+              title: 'Assets',
+              icon: const Text('The assets in your flutter project'),
+              builder: (final context) => AssetsList(
+                projectDirectory: widget.projectDirectory,
+                source: source,
+              ),
+            ),
+          ],
+        ),
+      );
+
+  /// Create a new room.
+  Future<void> createRoom() async {
+    await database.roomsDao.createRoom('Untitled Room');
+    setState(() {});
   }
 }

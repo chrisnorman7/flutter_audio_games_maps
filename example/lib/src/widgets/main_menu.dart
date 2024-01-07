@@ -30,7 +30,7 @@ class MainMenu extends StatelessWidget {
             .toList()
           ..sort(
             (final a, final b) =>
-                a.statSync().accessed.compareTo(b.statSync().accessed),
+                b.statSync().accessed.compareTo(a.statSync().accessed),
           );
     sharedPreferences.setStringList(
       recentDirectoriesKey,

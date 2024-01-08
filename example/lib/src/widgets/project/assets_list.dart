@@ -5,6 +5,7 @@ import 'package:backstreets_widgets/widgets.dart';
 import 'package:dart_synthizer/dart_synthizer.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
+import 'package:recase/recase.dart';
 import 'package:yaml/yaml.dart';
 
 import '../../constants.dart';
@@ -58,50 +59,66 @@ class AssetsListState extends State<AssetsList> {
     final directory = currentDirectory;
     if (directory != null) {
       final parent = parentDirectory;
-      final entities = directory.listSync();
+      final entities = [parent, ...directory.listSync()];
       return Cancel(
         onCancel: () => setState(() {
           currentDirectory = null;
           parentDirectory = null;
         }),
         child: BuiltSearchableListView(
-          items: [if (parent != null) parent, ...entities],
+          items: entities,
           builder: (final context, final index) {
             final entity = entities[index];
-            final title = path.basename(entity.path);
+            String title;
             final Widget child;
-            if (entity is File) {
-              child = FileListTile(
-                autofocus: index == 0,
-                file: entity,
-                onTap: (final file) => setClipboardText(file.path),
-                source: widget.source,
-              );
-            } else if (entity is Directory) {
-              child = DirectoryListTile(
-                autofocus: index == 0,
-                directory: entity,
-                onTap: (final directory) {
-                  if (directory == parent) {
-                    setState(() {
-                      parentDirectory = null;
-                      currentDirectory = null;
-                    });
-                  } else {
-                    setState(() {
-                      currentDirectory = directory;
-                      parentDirectory = entity.parent;
-                    });
-                  }
-                },
+            if (entity == null) {
+              title = '.. Back to assets';
+              child = ListTile(
+                autofocus: true,
+                title: Text(title),
+                onTap: () => setState(() {
+                  currentDirectory = null;
+                  parentDirectory = null;
+                }),
               );
             } else {
-              child = ListTile(
-                autofocus: index == 0,
-                title: Text(path.basename(entity.path)),
-                subtitle: const Text('Invalid Asset'),
-                onTap: () => setClipboardText(entity.path),
-              );
+              title = path.basename(entity.path);
+              if (entity == parent) {
+                title = '.. $title';
+              }
+              if (entity is File) {
+                child = FileListTile(
+                  autofocus: index == 0,
+                  file: entity,
+                  onTap: copyAssetName,
+                  source: widget.source,
+                );
+              } else if (entity is Directory) {
+                child = DirectoryListTile(
+                  autofocus: index == 0,
+                  directory: entity,
+                  onTap: (final directory) {
+                    if (directory == parent) {
+                      setState(() {
+                        parentDirectory = null;
+                        currentDirectory = null;
+                      });
+                    } else {
+                      setState(() {
+                        currentDirectory = directory;
+                        parentDirectory = entity.parent;
+                      });
+                    }
+                  },
+                );
+              } else {
+                child = ListTile(
+                  autofocus: index == 0,
+                  title: Text(path.basename(entity.path)),
+                  subtitle: const Text('Invalid Asset'),
+                  onTap: () => setClipboardText(entity.path),
+                );
+              }
             }
             return SearchableListTile(
               searchString: title,
@@ -131,7 +148,7 @@ class AssetsListState extends State<AssetsList> {
           child = FileListTile(
             autofocus: index == 0,
             file: file,
-            onTap: (final file) => setClipboardText(file.path),
+            onTap: copyAssetName,
             source: widget.source,
             title: asset,
           );
@@ -157,9 +174,35 @@ class AssetsListState extends State<AssetsList> {
         }
         return SearchableListTile(
           searchString: path.basename(assetPath),
-          child: child,
+          child: CommonShortcuts(
+            copyText: [
+              'Assets',
+              ...path.split(asset).map((final e) => e.camelCase),
+            ].join('.'),
+            child: child,
+          ),
         );
       },
+    );
+  }
+
+  /// Copy the [file] path as an asset name.
+  void copyAssetName(final File file) {
+    final relativePath = path.relative(
+      file.path,
+      from: widget.projectDirectory.path,
+    );
+    final extension = path.extension(relativePath);
+    final shortenedPath = relativePath.substring(
+      0,
+      relativePath.length - extension.length,
+    );
+    final splitPath = [
+      'Assets',
+      ...path.split(shortenedPath).map((final e) => e.camelCase),
+    ];
+    return setClipboardText(
+      splitPath.join('.'),
     );
   }
 }

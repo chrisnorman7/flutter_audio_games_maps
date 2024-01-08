@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:backstreets_widgets/icons.dart';
 import 'package:backstreets_widgets/screens.dart';
+import 'package:backstreets_widgets/util.dart';
 import 'package:backstreets_widgets/widgets.dart';
 import 'package:dart_synthizer/dart_synthizer.dart';
 import 'package:flutter/material.dart';
@@ -10,8 +11,8 @@ import 'package:path/path.dart' as path;
 
 import '../../constants.dart';
 import '../../database/database.dart';
-import '../../widgets/project/assets_list.dart';
 import '../../widgets/project/rooms_list.dart';
+import '../../widgets/project/select_asset.dart';
 
 /// A screen for displaying a project.
 class ProjectScreen extends StatefulWidget {
@@ -76,9 +77,10 @@ class ProjectScreenState extends State<ProjectScreen> {
             TabbedScaffoldTab(
               title: 'Assets',
               icon: const Text('The assets in your flutter project'),
-              builder: (final context) => AssetsList(
+              builder: (final context) => SelectAsset(
                 projectDirectory: widget.projectDirectory,
                 source: source,
+                onDone: (final value) => setClipboardText(value.assetPath),
               ),
             ),
           ],

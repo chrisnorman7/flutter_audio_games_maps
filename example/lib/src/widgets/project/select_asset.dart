@@ -8,16 +8,18 @@ import 'package:path/path.dart' as path;
 import 'package:recase/recase.dart';
 import 'package:yaml/yaml.dart';
 
+import '../../asset_reference.dart';
 import '../../constants.dart';
 import '../directory_list_tile.dart';
 import '../file_list_tile.dart';
 
 /// A widget for displaying and previewing Flutter assets.
-class AssetsList extends StatefulWidget {
+class SelectAsset extends StatefulWidget {
   /// Create an instance.
-  const AssetsList({
+  const SelectAsset({
     required this.projectDirectory,
     required this.source,
+    required this.onDone,
     super.key,
   });
 
@@ -27,21 +29,21 @@ class AssetsList extends StatefulWidget {
   /// The source to play sounds through.
   final Source source;
 
+  /// The function to call when an asset is selected.
+  final ValueChanged<AssetReference> onDone;
+
   /// Create state for this widget.
   @override
-  AssetsListState createState() => AssetsListState();
+  SelectAssetState createState() => SelectAssetState();
 }
 
-/// State for [AssetsList].
-class AssetsListState extends State<AssetsList> {
+/// State for [SelectAsset].
+class SelectAssetState extends State<SelectAsset> {
   /// The loaded map.
   late final YamlList? flutterAssets;
 
   /// The current directory.
   Directory? currentDirectory;
-
-  /// The parent directory of [currentDirectory].
-  Directory? parentDirectory;
 
   /// Initialise state.
   @override
@@ -58,71 +60,34 @@ class AssetsListState extends State<AssetsList> {
   Widget build(final BuildContext context) {
     final directory = currentDirectory;
     if (directory != null) {
-      final parent = parentDirectory;
-      final entities = [parent, ...directory.listSync()];
+      final files = [null, ...directory.listSync().whereType<File>()];
       return Cancel(
         onCancel: () => setState(() {
           currentDirectory = null;
-          parentDirectory = null;
         }),
         child: BuiltSearchableListView(
-          items: entities,
+          items: files,
           builder: (final context, final index) {
-            final entity = entities[index];
-            String title;
-            final Widget child;
-            if (entity == null) {
-              title = '.. Back to assets';
-              child = ListTile(
-                autofocus: true,
-                title: Text(title),
-                onTap: () => setState(() {
-                  currentDirectory = null;
-                  parentDirectory = null;
-                }),
+            final file = files[index];
+            final title = path.basename(file?.path ?? directory.path);
+            if (file == null) {
+              return SearchableListTile(
+                searchString: 'Select $title',
+                child: ListTile(
+                  autofocus: true,
+                  title: Text('Select $title'),
+                  onTap: () => entitySelected(directory),
+                ),
               );
-            } else {
-              title = path.basename(entity.path);
-              if (entity == parent) {
-                title = '.. $title';
-              }
-              if (entity is File) {
-                child = FileListTile(
-                  autofocus: index == 0,
-                  file: entity,
-                  onTap: copyAssetName,
-                  source: widget.source,
-                );
-              } else if (entity is Directory) {
-                child = DirectoryListTile(
-                  autofocus: index == 0,
-                  directory: entity,
-                  onTap: (final directory) {
-                    if (directory == parent) {
-                      setState(() {
-                        parentDirectory = null;
-                        currentDirectory = null;
-                      });
-                    } else {
-                      setState(() {
-                        currentDirectory = directory;
-                        parentDirectory = entity.parent;
-                      });
-                    }
-                  },
-                );
-              } else {
-                child = ListTile(
-                  autofocus: index == 0,
-                  title: Text(path.basename(entity.path)),
-                  subtitle: const Text('Invalid Asset'),
-                  onTap: () => setClipboardText(entity.path),
-                );
-              }
             }
             return SearchableListTile(
               searchString: title,
-              child: child,
+              child: FileListTile(
+                autofocus: index == 0,
+                file: file,
+                onTap: entitySelected,
+                source: widget.source,
+              ),
             );
           },
         ),
@@ -148,7 +113,7 @@ class AssetsListState extends State<AssetsList> {
           child = FileListTile(
             autofocus: index == 0,
             file: file,
-            onTap: copyAssetName,
+            onTap: entitySelected,
             source: widget.source,
             title: asset,
           );
@@ -159,7 +124,6 @@ class AssetsListState extends State<AssetsList> {
             onTap: (final directory) {
               setState(() {
                 currentDirectory = directory;
-                parentDirectory = null;
               });
             },
             title: asset,
@@ -168,41 +132,42 @@ class AssetsListState extends State<AssetsList> {
           child = ListTile(
             autofocus: index == 0,
             title: Text(asset),
-            subtitle: const Text('Invalid Asset'),
-            onTap: () => setClipboardText(asset),
+            subtitle: const Text('<INVALID>'),
+            onTap: () => showMessage(
+              context: context,
+              message: 'This asset was not found on the filesystem.',
+            ),
           );
         }
         return SearchableListTile(
           searchString: path.basename(assetPath),
-          child: CommonShortcuts(
-            copyText: [
-              'Assets',
-              ...path.split(asset).map((final e) => e.camelCase),
-            ].join('.'),
-            child: child,
-          ),
+          child: child,
         );
       },
     );
   }
 
-  /// Copy the [file] path as an asset name.
-  void copyAssetName(final File file) {
+  /// Indicate that [entity] has been selected.
+  void entitySelected(final FileSystemEntity entity) {
     final relativePath = path.relative(
-      file.path,
+      entity.path,
       from: widget.projectDirectory.path,
     );
-    final extension = path.extension(relativePath);
-    final shortenedPath = relativePath.substring(
-      0,
-      relativePath.length - extension.length,
-    );
+    final String shortenedPath;
+    if (entity is File) {
+      final extension = path.extension(relativePath);
+      shortenedPath = relativePath.substring(
+        0,
+        relativePath.length - extension.length,
+      );
+    } else {
+      shortenedPath = relativePath;
+    }
     final splitPath = [
       'Assets',
       ...path.split(shortenedPath).map((final e) => e.camelCase),
     ];
-    return setClipboardText(
-      splitPath.join('.'),
-    );
+    widget
+        .onDone(AssetReference(assetPath: splitPath.join('.'), entity: entity));
   }
 }

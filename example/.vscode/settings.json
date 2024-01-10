@@ -8,6 +8,7 @@
     "formals",
     "pubspec",
     "recase",
+    "riverpod",
     "synthizer",
     "todos",
     "unawaited"

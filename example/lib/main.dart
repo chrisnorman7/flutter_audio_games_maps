@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_synthizer/flutter_synthizer.dart';
 
 import 'src/screens/home_page.dart';
 
 /// Entry point.
 void main() {
-  runApp(const MyApp());
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 /// The top-level app widget.

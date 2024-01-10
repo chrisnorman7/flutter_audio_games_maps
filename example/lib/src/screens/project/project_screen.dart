@@ -32,8 +32,17 @@ class ProjectScreen extends StatefulWidget {
 
 /// State for [ProjectScreen].
 class ProjectScreenState extends State<ProjectScreen> {
-  /// The source to play sounds through.
-  late final DirectSource source;
+  /// The source to play interface sounds through.
+  late final DirectSource interfaceSoundsSource;
+
+  /// The source to play music through.
+  late final DirectSource musicSource;
+
+  /// The source to play footstep sounds through.
+  late final DirectSource footstepSoundsSource;
+
+  /// The source to play ambiances through.
+  late final DirectSource ambiancesSource;
 
   /// The database to use.
   late final EditorDatabase database;
@@ -45,7 +54,11 @@ class ProjectScreenState extends State<ProjectScreen> {
     database = EditorDatabase(
       File(path.join(widget.projectDirectory.path, databaseFilename)),
     );
-    source = context.synthizerContext.createDirectSource();
+    final synthizerContext = context.synthizerContext;
+    interfaceSoundsSource = synthizerContext.createDirectSource();
+    musicSource = synthizerContext.createDirectSource();
+    footstepSoundsSource = synthizerContext.createDirectSource();
+    ambiancesSource = synthizerContext.createDirectSource();
   }
 
   /// Dispose of the widget.
@@ -53,7 +66,14 @@ class ProjectScreenState extends State<ProjectScreen> {
   void dispose() {
     super.dispose();
     database.close();
-    source.destroy();
+    for (final source in [
+      interfaceSoundsSource,
+      musicSource,
+      footstepSoundsSource,
+      ambiancesSource,
+    ]) {
+      source.destroy();
+    }
   }
 
   /// Build a widget.
@@ -79,7 +99,7 @@ class ProjectScreenState extends State<ProjectScreen> {
               icon: const Text('The assets in your flutter project'),
               builder: (final context) => SelectAsset(
                 projectDirectory: widget.projectDirectory,
-                source: source,
+                source: interfaceSoundsSource,
                 onDone: (final value) => setClipboardText(value.assetPath),
               ),
             ),

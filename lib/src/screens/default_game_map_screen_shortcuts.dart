@@ -193,14 +193,9 @@ List<GameShortcut> getDefaultGameMapScreenShortcuts(
         title: 'Show keyboard shortcuts',
         key: LogicalKeyboardKey.f1,
         onStart: (final innerContext) => innerContext.pushWidgetBuilder(
-          (final builderContext) {
-            final shortcuts = GameShortcuts.of(
-              builderContext,
-            ).shortcuts;
-            return GameShortcutsHelpScreen(
-              shortcuts: shortcuts,
-            );
-          },
+          (final builderContext) => GameShortcutsHelpScreen(
+            shortcuts: state.shortcuts,
+          ),
         ),
       ),
     ];

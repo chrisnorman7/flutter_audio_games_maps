@@ -10,7 +10,6 @@ import 'package:flutter_tts/flutter_tts.dart';
 
 import '../../flutter_audio_games_maps.dart';
 import '../game_objects/game_object_visibility.dart';
-import 'default_game_map_screen_shortcuts.dart';
 
 final _random = Random();
 
@@ -183,6 +182,9 @@ class GameMapScreen extends StatefulWidget {
 
 /// State for [GameMapScreen].
 class GameMapScreenState extends State<GameMapScreen> {
+  /// The game shortcuts to use.
+  late List<GameShortcut> shortcuts;
+
   /// The TTS instance to use.
   late final FlutterTts _tts;
 
@@ -341,6 +343,7 @@ class GameMapScreenState extends State<GameMapScreen> {
   @override
   void initState() {
     super.initState();
+    shortcuts = widget.gameShortcutsBuilder(this);
     _tts = FlutterTts()..setSpeechRate(widget.ttsRate);
     gameObjectContexts = [];
     _collisions = {};
@@ -453,126 +456,129 @@ class GameMapScreenState extends State<GameMapScreen> {
 
   /// Build a widget.
   @override
-  Widget build(final BuildContext context) => ReverbBuilder(
-        reverbPreset: widget.reverbPreset,
-        builder: (final context, final reverb) {
-          _reverb = reverb;
-          widget.footstepSoundsSource.addInput(reverb);
-          widget.onCreateReverb?.call(reverb);
-          final future = loadGameObjects(reverb);
-          return MaybeMusic(
-            music: widget.music,
-            source: widget.musicSource,
-            builder: (final context) => Ambiances(
-              ambiances: widget.ambiances,
-              fadeIn: widget.musicFadeIn,
-              fadeOut: widget.musicFadeOut,
-              source: widget.ambiancesSource,
-              child: SimpleFutureBuilder(
-                future: future,
-                done: (final futureContext, final _) {
-                  for (final gameObjectContext in gameObjectContexts) {
-                    gameObjectContext.source.addInput(reverb);
-                  }
-                  return GameWallsBuilder(
-                    walls: widget.walls,
-                    builder: (final context, final wallsContext) {
-                      gameWallsContext = wallsContext;
-                      movePlayer(
-                        to: coordinates,
-                        playFootstepSound: false,
-                        checkCollisions: false,
-                      );
-                      return TickingTasks(
-                        tasks: [
-                          // Player movement.
-                          TickingTask(
-                            onTick: () {
-                              final movingDirection = playerMovingDirection;
-                              if (movingDirection == null) {
-                                return;
-                              }
-                              final double distance;
-                              final double direction;
-                              switch (movingDirection) {
-                                case MovingDirection.forwards:
-                                  distance = widget.forwardsDistance;
-                                  direction = _heading;
-                                  break;
-                                case MovingDirection.backwards:
-                                  distance = widget.backwardsDistance;
-                                  direction = normaliseAngle(_heading + 180.0);
-                                  break;
-                                case MovingDirection.left:
-                                  distance = widget.leftDistance;
-                                  direction = normaliseAngle(_heading - 90);
-                                  break;
-                                case MovingDirection.right:
-                                  distance = widget.rightDistance;
-                                  direction = normaliseAngle(_heading + 90);
-                              }
-                              final target = _coordinates.pointInDirection(
-                                direction,
-                                distance,
-                              );
-                              movePlayer(
-                                to: target,
-                                playFootstepSound: true,
-                                checkCollisions: true,
-                              );
-                            },
-                            duration: widget.playerMoveInterval,
-                          ),
-                          // Player turning.
-                          TickingTask(
-                            onTick: () {
-                              final turningDirection = playerTurningDirection;
-                              if (turningDirection == null) {
-                                return;
-                              }
-                              final amount = switch (turningDirection) {
-                                TurningDirection.left =>
-                                  -widget.playerTurnDistance,
-                                TurningDirection.right =>
-                                  widget.playerTurnDistance,
-                              };
-                              turnPlayer(normaliseAngle(_heading + amount));
-                            },
-                            duration: widget.playerTurnInterval,
-                          ),
-                        ],
-                        child: SimpleScaffold(
-                          title: widget.title,
-                          body: GameShortcuts(
-                            shortcuts: widget.gameShortcutsBuilder(this),
-                            child: Text(widget.title),
-                          ),
+  Widget build(final BuildContext context) {
+    shortcuts = widget.gameShortcutsBuilder(this);
+    return ReverbBuilder(
+      reverbPreset: widget.reverbPreset,
+      builder: (final context, final reverb) {
+        _reverb = reverb;
+        widget.footstepSoundsSource.addInput(reverb);
+        widget.onCreateReverb?.call(reverb);
+        final future = loadGameObjects(reverb);
+        return MaybeMusic(
+          music: widget.music,
+          source: widget.musicSource,
+          builder: (final context) => Ambiances(
+            ambiances: widget.ambiances,
+            fadeIn: widget.musicFadeIn,
+            fadeOut: widget.musicFadeOut,
+            source: widget.ambiancesSource,
+            child: SimpleFutureBuilder(
+              future: future,
+              done: (final futureContext, final _) {
+                for (final gameObjectContext in gameObjectContexts) {
+                  gameObjectContext.source.addInput(reverb);
+                }
+                return GameWallsBuilder(
+                  walls: widget.walls,
+                  builder: (final context, final wallsContext) {
+                    gameWallsContext = wallsContext;
+                    movePlayer(
+                      to: coordinates,
+                      playFootstepSound: false,
+                      checkCollisions: false,
+                    );
+                    return TickingTasks(
+                      tasks: [
+                        // Player movement.
+                        TickingTask(
+                          onTick: () {
+                            final movingDirection = playerMovingDirection;
+                            if (movingDirection == null) {
+                              return;
+                            }
+                            final double distance;
+                            final double direction;
+                            switch (movingDirection) {
+                              case MovingDirection.forwards:
+                                distance = widget.forwardsDistance;
+                                direction = _heading;
+                                break;
+                              case MovingDirection.backwards:
+                                distance = widget.backwardsDistance;
+                                direction = normaliseAngle(_heading + 180.0);
+                                break;
+                              case MovingDirection.left:
+                                distance = widget.leftDistance;
+                                direction = normaliseAngle(_heading - 90);
+                                break;
+                              case MovingDirection.right:
+                                distance = widget.rightDistance;
+                                direction = normaliseAngle(_heading + 90);
+                            }
+                            final target = _coordinates.pointInDirection(
+                              direction,
+                              distance,
+                            );
+                            movePlayer(
+                              to: target,
+                              playFootstepSound: true,
+                              checkCollisions: true,
+                            );
+                          },
+                          duration: widget.playerMoveInterval,
                         ),
-                      );
-                    },
-                    wallCloseSound: widget.wallCloseSound,
-                    wallCloseDistance: widget.wallCloseDistance,
-                    initialCoordinates: widget.initialCoordinates,
-                    initialHeading: widget.initialHeading,
-                    openSpaceSource: widget.footstepSoundsSource,
-                    echoDelayModifier: widget.echoDelayModifier,
-                    echoMaxGain: widget.echoMaxGain,
-                  );
-                },
-                loading: (final innerContext) => SimpleScaffold(
-                  title: widget.title,
-                  body: CircularProgressIndicator(
-                    semanticsLabel: widget.title,
-                  ),
+                        // Player turning.
+                        TickingTask(
+                          onTick: () {
+                            final turningDirection = playerTurningDirection;
+                            if (turningDirection == null) {
+                              return;
+                            }
+                            final amount = switch (turningDirection) {
+                              TurningDirection.left =>
+                                -widget.playerTurnDistance,
+                              TurningDirection.right =>
+                                widget.playerTurnDistance,
+                            };
+                            turnPlayer(normaliseAngle(_heading + amount));
+                          },
+                          duration: widget.playerTurnInterval,
+                        ),
+                      ],
+                      child: SimpleScaffold(
+                        title: widget.title,
+                        body: GameShortcuts(
+                          shortcuts: widget.gameShortcutsBuilder(this),
+                          child: Text(widget.title),
+                        ),
+                      ),
+                    );
+                  },
+                  wallCloseSound: widget.wallCloseSound,
+                  wallCloseDistance: widget.wallCloseDistance,
+                  initialCoordinates: widget.initialCoordinates,
+                  initialHeading: widget.initialHeading,
+                  openSpaceSource: widget.footstepSoundsSource,
+                  echoDelayModifier: widget.echoDelayModifier,
+                  echoMaxGain: widget.echoMaxGain,
+                );
+              },
+              loading: (final innerContext) => SimpleScaffold(
+                title: widget.title,
+                body: CircularProgressIndicator(
+                  semanticsLabel: widget.title,
                 ),
-                error: ErrorScreen.withPositional,
               ),
+              error: ErrorScreen.withPositional,
             ),
-            fadeInLength: widget.musicFadeIn,
-            fadeOutLength: widget.musicFadeOut,
-          );
-        },
-      );
+          ),
+          fadeInLength: widget.musicFadeIn,
+          fadeOutLength: widget.musicFadeOut,
+        );
+      },
+    );
+  }
 
   /// Returns the list of [gameObjectContexts] which are visible from
   /// [coordinates].

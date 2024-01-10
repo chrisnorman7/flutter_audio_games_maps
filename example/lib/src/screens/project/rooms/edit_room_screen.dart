@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:backstreets_widgets/extensions.dart';
 import 'package:backstreets_widgets/screens.dart';
 import 'package:backstreets_widgets/widgets.dart';
@@ -8,7 +10,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_audio_games/flutter_audio_games.dart';
 import 'package:flutter_audio_games_maps/flutter_audio_games_maps.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_synthizer/flutter_synthizer.dart';
 
 import '../../../../gen/assets.gen.dart';
 import '../../../database/database.dart';
@@ -56,10 +57,7 @@ class EditRoomScreen extends ConsumerWidget {
       data: (final room) => GameMapScreen(
         title: room.name,
         reverbPreset: ReverbPreset(name: room.name),
-        defaultFootstepSounds: const SoundList(
-          paths: [],
-          pathType: PathType.file,
-        ),
+        defaultFootstepSounds: Assets.sounds.footsteps.values.asSoundList(),
         footstepSoundsSource: footstepSoundsSource,
         ambiancesSource: ambiancesSource,
         musicSource: musicSource,
@@ -88,6 +86,9 @@ class EditRoomScreen extends ConsumerWidget {
                   );
                   ref.invalidate(provider);
                 },
+                labelText: 'Room name',
+                text: room.name,
+                title: 'Rename Room',
               ),
             ),
           ),
@@ -96,6 +97,9 @@ class EditRoomScreen extends ConsumerWidget {
             key: LogicalKeyboardKey.escape,
             onStart: Navigator.pop,
           ),
+        ],
+        objects: const [
+          GameObject(name: 'First thing', startPosition: Point(0, 0)),
         ],
       ),
       error: ErrorScreen.withPositional,

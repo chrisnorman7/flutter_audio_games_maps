@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:backstreets_widgets/extensions.dart';
 import 'package:backstreets_widgets/icons.dart';
 import 'package:backstreets_widgets/screens.dart';
 import 'package:backstreets_widgets/util.dart';
@@ -13,6 +14,7 @@ import '../../constants.dart';
 import '../../database/database.dart';
 import '../../widgets/project/rooms_list.dart';
 import '../../widgets/project/select_asset.dart';
+import 'rooms/edit_room_screen.dart';
 
 /// A screen for displaying a project.
 class ProjectScreen extends StatefulWidget {
@@ -86,7 +88,13 @@ class ProjectScreenState extends State<ProjectScreen> {
               icon: const Text('The rooms in the database'),
               builder: (final context) => CommonShortcuts(
                 newCallback: createRoom,
-                child: RoomsList(database: database),
+                child: RoomsList(
+                  database: database,
+                  footstepSoundsSource: footstepSoundsSource,
+                  ambiancesSource: ambiancesSource,
+                  musicSource: musicSource,
+                  interfaceSoundsSource: interfaceSoundsSource,
+                ),
               ),
               floatingActionButton: FloatingActionButton(
                 onPressed: createRoom,
@@ -109,7 +117,19 @@ class ProjectScreenState extends State<ProjectScreen> {
 
   /// Create a new room.
   Future<void> createRoom() async {
-    await database.roomsDao.createRoom('Untitled Room');
-    setState(() {});
+    final room = await database.roomsDao.createRoom('Untitled Room');
+    if (mounted) {
+      await context.pushWidgetBuilder(
+        (final context) => EditRoomScreen(
+          database: database,
+          roomId: room.id,
+          footstepSoundsSource: footstepSoundsSource,
+          ambiancesSource: ambiancesSource,
+          musicSource: musicSource,
+          interfaceSoundsSource: interfaceSoundsSource,
+        ),
+      );
+      setState(() {});
+    }
   }
 }

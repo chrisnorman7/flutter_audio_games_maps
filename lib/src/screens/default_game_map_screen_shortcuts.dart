@@ -165,7 +165,7 @@ List<GameShortcut> getDefaultGameMapScreenShortcuts(
                     state.heading,
               ).floor();
               state.speak(
-                '$distance metres at $angle °',
+                '$distance ${distance == 1 ? "metre" : "metres"} at $angle °',
               );
             }
           }

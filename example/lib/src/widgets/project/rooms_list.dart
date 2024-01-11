@@ -3,14 +3,14 @@ import 'package:backstreets_widgets/widgets.dart';
 import 'package:dart_synthizer/dart_synthizer.dart';
 import 'package:flutter/material.dart';
 
-import '../../database/database.dart';
+import '../../project_context.dart';
 import '../../screens/project/rooms/edit_room_screen.dart';
 
 /// A widget which displays a list of rooms.
 class RoomsList extends StatelessWidget {
   /// Create an instance.
   const RoomsList({
-    required this.database,
+    required this.projectContext,
     required this.footstepSoundsSource,
     required this.ambiancesSource,
     required this.musicSource,
@@ -18,8 +18,8 @@ class RoomsList extends StatelessWidget {
     super.key,
   });
 
-  /// The database to use.
-  final EditorDatabase database;
+  /// The project context to use.
+  final ProjectContext projectContext;
 
   /// The footstep sounds source to use.
   final Source footstepSoundsSource;
@@ -36,7 +36,7 @@ class RoomsList extends StatelessWidget {
   /// Build a widget.
   @override
   Widget build(final BuildContext context) {
-    final future = database.roomsDao.getRooms();
+    final future = projectContext.database.roomsDao.getRooms();
     return SimpleFutureBuilder(
       future: future,
       done: (final context, final rooms) {
@@ -57,7 +57,7 @@ class RoomsList extends StatelessWidget {
                 title: Text(room.name),
                 onTap: () => context.pushWidgetBuilder(
                   (final context) => EditRoomScreen(
-                    database: database,
+                    projectContext: projectContext,
                     roomId: room.id,
                     footstepSoundsSource: footstepSoundsSource,
                     ambiancesSource: ambiancesSource,

@@ -5,11 +5,11 @@ import 'package:backstreets_widgets/widgets.dart';
 import 'package:dart_synthizer/dart_synthizer.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
-import 'package:recase/recase.dart';
 import 'package:yaml/yaml.dart';
 
 import '../../asset_reference.dart';
 import '../../constants.dart';
+import '../../project_context.dart';
 import '../directory_list_tile.dart';
 import '../file_list_tile.dart';
 
@@ -17,14 +17,14 @@ import '../file_list_tile.dart';
 class SelectAsset extends StatefulWidget {
   /// Create an instance.
   const SelectAsset({
-    required this.projectDirectory,
+    required this.projectContext,
     required this.source,
     required this.onDone,
     super.key,
   });
 
-  /// The directory to load the project YAML from.
-  final Directory projectDirectory;
+  /// The project context to use.
+  final ProjectContext projectContext;
 
   /// The source to play sounds through.
   final Source source;
@@ -49,7 +49,8 @@ class SelectAssetState extends State<SelectAsset> {
   @override
   void initState() {
     super.initState();
-    final file = File(path.join(widget.projectDirectory.path, pubspecFilename));
+    final file =
+        File(path.join(widget.projectContext.directory.path, pubspecFilename));
     final yamlMap = loadYaml(file.readAsStringSync()) as YamlMap;
     final flutterMap = yamlMap['flutter'] as YamlMap;
     flutterAssets = flutterMap['assets'];
@@ -105,7 +106,8 @@ class SelectAssetState extends State<SelectAsset> {
       items: strings,
       builder: (final context, final index) {
         final asset = strings[index];
-        final assetPath = path.join(widget.projectDirectory.path, asset);
+        final assetPath =
+            path.join(widget.projectContext.directory.path, asset);
         final file = File(assetPath);
         final directory = Directory(assetPath);
         final Widget child;
@@ -149,25 +151,7 @@ class SelectAssetState extends State<SelectAsset> {
 
   /// Indicate that [entity] has been selected.
   void entitySelected(final FileSystemEntity entity) {
-    final relativePath = path.relative(
-      entity.path,
-      from: widget.projectDirectory.path,
-    );
-    final String shortenedPath;
-    if (entity is File) {
-      final extension = path.extension(relativePath);
-      shortenedPath = relativePath.substring(
-        0,
-        relativePath.length - extension.length,
-      );
-    } else {
-      shortenedPath = relativePath;
-    }
-    final splitPath = [
-      'Assets',
-      ...path.split(shortenedPath).map((final e) => e.camelCase),
-    ];
-    widget
-        .onDone(AssetReference(assetPath: splitPath.join('.'), entity: entity));
+    final assetReference = widget.projectContext.getAssetReference(entity);
+    widget.onDone(assetReference);
   }
 }

@@ -13,13 +13,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../gen/assets.gen.dart';
 import '../../../database/database.dart';
+import '../../../project_context.dart';
 import '../../../providers/providers.dart';
 
 /// A screen for editing a room.
 class EditRoomScreen extends ConsumerWidget {
   /// Create an instance.
   const EditRoomScreen({
-    required this.database,
+    required this.projectContext,
     required this.roomId,
     required this.footstepSoundsSource,
     required this.ambiancesSource,
@@ -28,8 +29,8 @@ class EditRoomScreen extends ConsumerWidget {
     super.key,
   });
 
-  /// The database to use.
-  final EditorDatabase database;
+  /// The project context to use.
+  final ProjectContext projectContext;
 
   /// The ID of the room to edit.
   final int roomId;
@@ -47,7 +48,7 @@ class EditRoomScreen extends ConsumerWidget {
   final Source interfaceSoundsSource;
 
   /// The provider to use.
-  RoomProvider get provider => roomProvider(database, roomId);
+  RoomProvider get provider => roomProvider(projectContext.database, roomId);
 
   /// Build the widget.
   @override
@@ -80,7 +81,7 @@ class EditRoomScreen extends ConsumerWidget {
               (final context) => GetText(
                 onDone: (final name) async {
                   Navigator.pop(innerContext);
-                  await database.roomsDao.editRoom(
+                  await projectContext.database.roomsDao.editRoom(
                     room: room,
                     companion: RoomsCompanion(name: Value(name)),
                   );

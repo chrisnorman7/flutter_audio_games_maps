@@ -12,6 +12,7 @@ import 'package:path/path.dart' as path;
 
 import '../../constants.dart';
 import '../../database/database.dart';
+import '../../project_context.dart';
 import '../../widgets/project/rooms_list.dart';
 import '../../widgets/project/select_asset.dart';
 import 'rooms/edit_room_screen.dart';
@@ -47,14 +48,20 @@ class ProjectScreenState extends State<ProjectScreen> {
   late final DirectSource ambiancesSource;
 
   /// The database to use.
-  late final EditorDatabase database;
+  EditorDatabase get database => projectContext.database;
+
+  /// The project context to use.
+  late final ProjectContext projectContext;
 
   /// Initialise state.
   @override
   void initState() {
     super.initState();
-    database = EditorDatabase(
-      File(path.join(widget.projectDirectory.path, databaseFilename)),
+    projectContext = ProjectContext(
+      database: EditorDatabase(
+        File(path.join(widget.projectDirectory.path, databaseFilename)),
+      ),
+      directory: widget.projectDirectory,
     );
     final synthizerContext = context.synthizerContext;
     interfaceSoundsSource = synthizerContext.createDirectSource();
@@ -89,7 +96,7 @@ class ProjectScreenState extends State<ProjectScreen> {
               builder: (final context) => CommonShortcuts(
                 newCallback: createRoom,
                 child: RoomsList(
-                  database: database,
+                  projectContext: projectContext,
                   footstepSoundsSource: footstepSoundsSource,
                   ambiancesSource: ambiancesSource,
                   musicSource: musicSource,
@@ -106,7 +113,7 @@ class ProjectScreenState extends State<ProjectScreen> {
               title: 'Assets',
               icon: const Text('The assets in your flutter project'),
               builder: (final context) => SelectAsset(
-                projectDirectory: widget.projectDirectory,
+                projectContext: projectContext,
                 source: interfaceSoundsSource,
                 onDone: (final value) => setClipboardText(value.assetPath),
               ),
@@ -121,7 +128,7 @@ class ProjectScreenState extends State<ProjectScreen> {
     if (mounted) {
       await context.pushWidgetBuilder(
         (final context) => EditRoomScreen(
-          database: database,
+          projectContext: projectContext,
           roomId: room.id,
           footstepSoundsSource: footstepSoundsSource,
           ambiancesSource: ambiancesSource,

@@ -6,7 +6,7 @@ part of 'providers.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$roomHash() => r'737b969c71f58977193420e52b5de55038ab8af9';
+String _$roomHash() => r'fce74d142d64fb62b24df3acd6f22404fff48d21';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -38,7 +38,7 @@ const roomProvider = RoomFamily();
 /// Provide a single room.
 ///
 /// Copied from [room].
-class RoomFamily extends Family<AsyncValue<Room>> {
+class RoomFamily extends Family<AsyncValue<RoomContext>> {
   /// Provide a single room.
   ///
   /// Copied from [room].
@@ -85,7 +85,7 @@ class RoomFamily extends Family<AsyncValue<Room>> {
 /// Provide a single room.
 ///
 /// Copied from [room].
-class RoomProvider extends AutoDisposeFutureProvider<Room> {
+class RoomProvider extends AutoDisposeFutureProvider<RoomContext> {
   /// Provide a single room.
   ///
   /// Copied from [room].
@@ -124,7 +124,7 @@ class RoomProvider extends AutoDisposeFutureProvider<Room> {
 
   @override
   Override overrideWith(
-    FutureOr<Room> Function(RoomRef provider) create,
+    FutureOr<RoomContext> Function(RoomRef provider) create,
   ) {
     return ProviderOverride(
       origin: this,
@@ -142,7 +142,7 @@ class RoomProvider extends AutoDisposeFutureProvider<Room> {
   }
 
   @override
-  AutoDisposeFutureProviderElement<Room> createElement() {
+  AutoDisposeFutureProviderElement<RoomContext> createElement() {
     return _RoomProviderElement(this);
   }
 
@@ -163,7 +163,7 @@ class RoomProvider extends AutoDisposeFutureProvider<Room> {
   }
 }
 
-mixin RoomRef on AutoDisposeFutureProviderRef<Room> {
+mixin RoomRef on AutoDisposeFutureProviderRef<RoomContext> {
   /// The parameter `database` of this provider.
   EditorDatabase get database;
 
@@ -171,7 +171,7 @@ mixin RoomRef on AutoDisposeFutureProviderRef<Room> {
   int get id;
 }
 
-class _RoomProviderElement extends AutoDisposeFutureProviderElement<Room>
+class _RoomProviderElement extends AutoDisposeFutureProviderElement<RoomContext>
     with RoomRef {
   _RoomProviderElement(super.provider);
 

@@ -53,51 +53,58 @@ class EditRoomScreen extends ConsumerWidget {
   Widget build(final BuildContext context, final WidgetRef ref) {
     final value = ref.watch(provider);
     return value.when(
-      data: (final room) => GameMapScreen(
-        title: room.name,
-        reverbPreset: ReverbPreset(name: room.name),
-        defaultFootstepSounds: Assets.sounds.footsteps.values.asSoundList(),
-        footstepSoundsSource: footstepSoundsSource,
-        ambiancesSource: ambiancesSource,
-        musicSource: musicSource,
-        interfaceSoundsSource: interfaceSoundsSource,
-        showObjectSound: Assets.sounds.interface.object.asSound(),
-        noVisibleObjectsSound: Assets.sounds.interface.noObjects.asSound(),
-        gameShortcutsBuilder: (final state) => [
-          GameShortcut(
-            title: 'Rename room',
-            key: LogicalKeyboardKey.f2,
-            onStart: (final innerContext) => innerContext.pushWidgetBuilder(
-              (final context) => GetText(
-                onDone: (final name) async {
-                  Navigator.pop(innerContext);
-                  await projectContext.database.roomsDao.editRoom(
-                    room: room,
-                    companion: RoomsCompanion(name: Value(name)),
-                  );
-                  ref.invalidate(provider);
-                },
-                labelText: 'Room name',
-                text: room.name,
-                title: 'Rename Room',
+      data: (final roomContext) {
+        final room = roomContext.room;
+        final music = roomContext.music;
+        return GameMapScreen(
+          title: room.name,
+          reverbPreset: ReverbPreset(name: room.name),
+          defaultFootstepSounds: Assets.sounds.footsteps.values.asSoundList(),
+          footstepSoundsSource: footstepSoundsSource,
+          ambiancesSource: ambiancesSource,
+          musicSource: musicSource,
+          music: music == null
+              ? null
+              : projectContext.getSoundFromSoundReference(music),
+          interfaceSoundsSource: interfaceSoundsSource,
+          showObjectSound: Assets.sounds.interface.object.asSound(),
+          noVisibleObjectsSound: Assets.sounds.interface.noObjects.asSound(),
+          gameShortcutsBuilder: (final state) => [
+            GameShortcut(
+              title: 'Rename room',
+              key: LogicalKeyboardKey.f2,
+              onStart: (final innerContext) => innerContext.pushWidgetBuilder(
+                (final context) => GetText(
+                  onDone: (final name) async {
+                    Navigator.pop(innerContext);
+                    await projectContext.database.roomsDao.editRoom(
+                      room: room,
+                      companion: RoomsCompanion(name: Value(name)),
+                    );
+                    ref.invalidate(provider);
+                  },
+                  labelText: 'Room name',
+                  text: room.name,
+                  title: 'Rename Room',
+                ),
               ),
             ),
-          ),
-          const GameShortcut(
-            title: 'Return to rooms list',
-            key: LogicalKeyboardKey.escape,
-            onStart: Navigator.pop,
-          ),
-          ...getDefaultGameMapScreenShortcuts(state).where(
-            (final element) => ![
-              LogicalKeyboardKey.arrowUp,
-              LogicalKeyboardKey.arrowDown,
-              LogicalKeyboardKey.arrowLeft,
-              LogicalKeyboardKey.arrowRight,
-            ].contains(element.key),
-          ),
-        ],
-      ),
+            const GameShortcut(
+              title: 'Return to rooms list',
+              key: LogicalKeyboardKey.escape,
+              onStart: Navigator.pop,
+            ),
+            ...getDefaultGameMapScreenShortcuts(state).where(
+              (final element) => ![
+                LogicalKeyboardKey.arrowUp,
+                LogicalKeyboardKey.arrowDown,
+                LogicalKeyboardKey.arrowLeft,
+                LogicalKeyboardKey.arrowRight,
+              ].contains(element.key),
+            ),
+          ],
+        );
+      },
       error: ErrorScreen.withPositional,
       loading: LoadingScreen.new,
     );

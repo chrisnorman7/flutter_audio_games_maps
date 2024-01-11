@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../database.dart';
 import '../tables/rooms.dart';
+import 'contexts/room_context.dart';
 
 part 'rooms_dao.g.dart';
 
@@ -39,5 +40,18 @@ class RoomsDao extends DatabaseAccessor<EditorDatabase> with _$RoomsDaoMixin {
     final query = select(rooms)
       ..orderBy([(final table) => OrderingTerm.asc(table.name)]);
     return query.get();
+  }
+
+  /// Get a room context.
+  Future<RoomContext> getRoomContext(final int id) async {
+    final musicAlias = db.alias(db.soundReferences, db.rooms.musicId.name);
+    final query = select(rooms).join([
+      leftOuterJoin(
+        musicAlias,
+        rooms.musicId.equalsExp(musicAlias.id),
+      ),
+    ]);
+    final result = await query.getSingle();
+    return RoomContext.fromResult(db, result);
   }
 }

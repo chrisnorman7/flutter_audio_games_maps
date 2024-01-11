@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:flutter_audio_games/flutter_audio_games.dart';
+import 'package:flutter_synthizer/flutter_synthizer.dart';
 import 'package:path/path.dart' as path;
 import 'package:recase/recase.dart';
 
@@ -50,7 +52,7 @@ class ProjectContext {
   }
 
   /// Return an asset reference from [soundReference].
-  AssetReference getAssetReferenceFromSound(
+  Sound getSoundFromSoundReference(
     final SoundReference soundReference,
   ) {
     final FileSystemEntity entity;
@@ -64,9 +66,9 @@ class ProjectContext {
     } else {
       throw FileSystemException('No such file or directory', absolutePath);
     }
-    return AssetReference(
-      assetPath: getAssetReferenceFromFileSystemEntity(entity).assetPath,
-      entity: entity,
+    return Sound(
+      bufferReference:
+          BufferReference(path: entity.path, pathType: PathType.file),
     );
   }
 }

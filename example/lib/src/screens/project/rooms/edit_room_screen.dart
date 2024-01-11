@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:backstreets_widgets/extensions.dart';
 import 'package:backstreets_widgets/screens.dart';
 import 'package:backstreets_widgets/widgets.dart';
@@ -66,14 +64,6 @@ class EditRoomScreen extends ConsumerWidget {
         showObjectSound: Assets.sounds.interface.object.asSound(),
         noVisibleObjectsSound: Assets.sounds.interface.noObjects.asSound(),
         gameShortcutsBuilder: (final state) => [
-          ...getDefaultGameMapScreenShortcuts(state).where(
-            (final element) => ![
-              LogicalKeyboardKey.arrowUp,
-              LogicalKeyboardKey.arrowDown,
-              LogicalKeyboardKey.arrowLeft,
-              LogicalKeyboardKey.arrowRight,
-            ].contains(element.key),
-          ),
           GameShortcut(
             title: 'Rename room',
             key: LogicalKeyboardKey.f2,
@@ -98,9 +88,14 @@ class EditRoomScreen extends ConsumerWidget {
             key: LogicalKeyboardKey.escape,
             onStart: Navigator.pop,
           ),
-        ],
-        objects: const [
-          GameObject(name: 'First thing', startPosition: Point(0, 0)),
+          ...getDefaultGameMapScreenShortcuts(state).where(
+            (final element) => ![
+              LogicalKeyboardKey.arrowUp,
+              LogicalKeyboardKey.arrowDown,
+              LogicalKeyboardKey.arrowLeft,
+              LogicalKeyboardKey.arrowRight,
+            ].contains(element.key),
+          ),
         ],
       ),
       error: ErrorScreen.withPositional,

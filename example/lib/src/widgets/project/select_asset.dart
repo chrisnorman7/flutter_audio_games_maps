@@ -151,7 +151,10 @@ class SelectAssetState extends State<SelectAsset> {
 
   /// Indicate that [entity] has been selected.
   void entitySelected(final FileSystemEntity entity) {
-    final assetReference = widget.projectContext.getAssetReference(entity);
+    final assetReference =
+        widget.projectContext.getAssetReferenceFromFileSystemEntity(
+      entity,
+    );
     widget.onDone(assetReference);
   }
 }

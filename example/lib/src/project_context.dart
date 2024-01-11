@@ -25,7 +25,9 @@ class ProjectContext {
   /// Get an asset string from [entity].
   ///
   /// The path will be relative to the project [directory].
-  AssetReference getAssetReference(final FileSystemEntity entity) {
+  AssetReference getAssetReferenceFromFileSystemEntity(
+    final FileSystemEntity entity,
+  ) {
     final relativePath = path.relative(
       entity.path,
       from: directory.path,
@@ -45,5 +47,26 @@ class ProjectContext {
       ...path.split(shortenedPath).map((final e) => e.camelCase),
     ];
     return AssetReference(assetPath: splitPath.join('.'), entity: entity);
+  }
+
+  /// Return an asset reference from [soundReference].
+  AssetReference getAssetReferenceFromSound(
+    final SoundReference soundReference,
+  ) {
+    final FileSystemEntity entity;
+    final absolutePath = path.join(directory.path, soundReference.path);
+    final soundFile = File(absolutePath);
+    final soundDirectory = Directory(absolutePath);
+    if (soundFile.existsSync()) {
+      entity = soundFile;
+    } else if (soundDirectory.existsSync()) {
+      entity = soundDirectory;
+    } else {
+      throw FileSystemException('No such file or directory', absolutePath);
+    }
+    return AssetReference(
+      assetPath: getAssetReferenceFromFileSystemEntity(entity).assetPath,
+      entity: entity,
+    );
   }
 }

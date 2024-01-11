@@ -4,7 +4,9 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 
 import 'daos/rooms_dao.dart';
+import 'daos/sound_references_dao.dart';
 import 'tables/rooms.dart';
+import 'tables/sound_references.dart';
 
 part 'database.g.dart';
 
@@ -12,9 +14,11 @@ part 'database.g.dart';
 @DriftDatabase(
   tables: [
     Rooms,
+    SoundReferences,
   ],
   daos: [
     RoomsDao,
+    SoundReferencesDao,
   ],
 )
 class EditorDatabase extends _$EditorDatabase {
@@ -23,5 +27,16 @@ class EditorDatabase extends _$EditorDatabase {
 
   /// Schema version.
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  /// Perform migrations.
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onUpgrade: (final m, final from, final to) async {
+          if (from < 2) {
+            await m.createTable(soundReferences);
+            await m.addColumn(rooms, rooms.musicId);
+          }
+        },
+      );
 }
